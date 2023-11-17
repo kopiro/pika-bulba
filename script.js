@@ -1,4 +1,4 @@
-const GOAL = 50;
+const GOAL = 300;
 const $winner = document.querySelector("#winner");
 
 const $frames = {
