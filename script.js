@@ -9,7 +9,7 @@ const IMG_OFFSET = 30;
 const FPS = 1000 / 60;
 const MAX_ADVANCE = 100;
 const ROAD_METERS = 1000;
-const X_NOISE = 2;
+const X_NOISE = 1.5;
 
 const GOAL = MAX_ADVANCE * 300;
 
