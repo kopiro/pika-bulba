@@ -5,7 +5,7 @@ const CUBE_SIZE = 300; // sync with CSS!!
 const Z_START = -(CUBE_SIZE / 2);
 const Z_END = CUBE_SIZE / 2;
 const IMG_OFFSET = 30;
-const FPS = 10;
+const FPS = 1000 / 60;
 const MAX_ADVANCE = 100;
 
 const GOAL = MAX_ADVANCE * 500;
