@@ -1,0 +1,63 @@
+body {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+#imgs {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.img {
+  width: 40px;
+}
+
+#container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  display: block;
+}
+
+#trackers {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tracker {
+  width: 100%;
+  height: 20px;
+  border: 1px solid #ddd;
+  overflow: hidden;
+}
+
+.tracker > span {
+  width: 100%;
+  height: 20px;
+  display: block;
+  transform: translate(-100%);
+}
+
+.pikacute-color {
+  color: #edaa3d;
+}
+
+.bulbasuck-color {
+  color: #468849;
+}
+
+#pikacute-tracker > span {
+  background-color: #edaa3d;
+}
+
+#bulbasuck-tracker > span {
+  background-color: #468849;
+}
+
+#winner {
+  text-align: center;
+}
