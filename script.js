@@ -1,11 +1,12 @@
 const $winner = document.querySelector("#winner");
 const $startButton = document.querySelector("#start-button");
+const $scene = document.querySelector("#scene");
+const $trackers = document.querySelector("#trackers");
 
 const CUBE_SIZE = 300; // sync with CSS!!
 
 const Z_START = -(CUBE_SIZE / 2);
 const Z_END = CUBE_SIZE / 2;
-const IMG_OFFSET = 30;
 const FPS = 1000 / 60;
 const MAX_ADVANCE = 100;
 const ROAD_METERS = 1000;
@@ -13,126 +14,136 @@ const X_NOISE = 1;
 
 const GOAL = MAX_ADVANCE * 300;
 
-const $frames = {
-  pikacute: 0,
-  bulbasuck: 0,
-};
+const KEYS = Object.keys(config.$);
 
-const $maxFrames = {
-  pikacute: 10,
-  bulbasuck: 23,
-};
+const game = KEYS.reduce(
+  (acc, key) => {
+    acc.$[key] = {
+      z: 0,
+      x: 0,
+      frame: 0,
+      $image: (() => {
+        const img = new Image();
+        img.className = "img";
+        return img;
+      })(),
+      $progress: (() => {
+        const $tracker = document.createElement("div");
+        $tracker.className = `tracker`;
+        const $subtracker = document.createElement("span");
+        $subtracker.className = "subtracker";
+        $subtracker.style.backgroundColor = config.$[key].color;
+        $tracker.appendChild($subtracker);
+        return $tracker;
+      })(),
+    };
+    return acc;
+  },
+  {
+    winner: null,
+    loser: null,
+    $: {},
+  }
+);
 
-const $xOffsets = {
-  pikacute: -IMG_OFFSET,
-  bulbasuck: IMG_OFFSET,
-};
-
-const zPosition = {
-  pikacute: 0,
-  bulbasuck: 0,
-};
-
-const xPosition = {
-  pikacute: 0,
-  bulbasuck: 0,
-};
-
-const $images = {
-  pikacute: document.querySelector("#pikacute-img"),
-  bulbasuck: document.querySelector("#bulbasuck-img"),
-};
-
-const $progress = {
-  pikacute: document.querySelector("#pikacute-tracker .subtracker"),
-  bulbasuck: document.querySelector("#bulbasuck-tracker .subtracker"),
-};
-
-let winner = null;
-
-function positionImage(selector) {
-  const ratio = Math.min(1, zPosition[selector] / GOAL);
+function renderPlayer(key) {
+  const ratio = Math.min(1, game.$[key].z / GOAL);
   const z = Z_START + (Z_END - Z_START) * ratio;
+  const x = game.$[key].x + config.$[key].xOffset;
 
-  $images[selector].src = `./${selector}/${1 + $frames[selector]}.png`;
-  $images[selector].style.transform = `translate3d(${
-    xPosition[selector] + $xOffsets[selector]
-  }px, ${CUBE_SIZE}px, ${z}px)`;
+  game.$[key].$image.src = `./${key}/${1 + game.$[key].frame}.png`;
+  game.$[
+    key
+  ].$image.style.transform = `translate3d(${x}px, ${CUBE_SIZE}px, ${z}px)`;
 
   const meters = Math.floor(ROAD_METERS * ratio);
-  $progress[selector].textContent = `${meters}m`;
-  $progress[selector].style.transform = `translateX(-${(1 - ratio) * 100}%)`;
+  game.$[key].$progress.firstChild.textContent = `${meters}m`;
+  game.$[key].$progress.firstChild.style.transform = `translateX(-${
+    (1 - ratio) * 100
+  }%)`;
 }
 
-function makeItRun(selector) {
+function advancePlayer(key) {
   requestAnimationFrame(() => {
     const advanceBy = Math.floor(Math.random() * MAX_ADVANCE);
 
-    zPosition[selector] = Math.min(GOAL, zPosition[selector] + advanceBy);
-    $frames[selector] = ($frames[selector] + 1) % $maxFrames[selector];
+    game.$[key].z = Math.min(GOAL, game.$[key].z + advanceBy);
+    game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
 
     // Apply a bit of noise to the x position
-    xPosition[selector] += -X_NOISE + Math.random() * X_NOISE * 2;
+    game.$[key].x += -X_NOISE + Math.random() * X_NOISE * 2;
 
-    positionImage(selector);
+    renderPlayer(key);
 
-    if (zPosition[selector] === GOAL) {
-      if (!winner) {
-        declareWinner(selector);
+    if (game.$[key].z === GOAL) {
+      if (!game.winner) {
+        declareWinner(key);
       } else {
-        declareLoser(selector);
+        declareLoser(key);
       }
       return;
     }
 
     setTimeout(() => {
-      makeItRun(selector);
+      advancePlayer(key);
     }, FPS);
   });
 }
 
-function declareWinner(selector) {
-  winner = selector;
-  $images[selector].src = `./${selector}/win.gif`;
-  $winner.textContent = `${selector} won!`;
-  $winner.classList.add(`${selector}-color`);
+function declareWinner(key) {
+  game.winner = key;
+  game.$[key].$image.src = `./${key}/win.gif`;
+  $winner.textContent = `${key} won!`;
+  $winner.style.color = config.$[key].color;
 }
 
-function declareLoser(selector) {
-  $images[selector].src = `./${selector}/lost.gif`;
+function declareLoser(key) {
+  game.loser = key;
+  game.$[key].$image.src = `./${key}/lost.gif`;
 }
 
-function preloadImages(selector) {
+function preloadImages(key) {
   return new Promise((resolve) => {
     let loaded = 0;
-    for (let i = 1; i <= $maxFrames[selector]; i++) {
+    const frames = new Array(config.$[key].maxFrames - 1)
+      .fill()
+      .map((_, i) => `${i + 1}.png`);
+    frames.push("win.gif");
+    frames.push("lost.gif");
+    frames.forEach((i) => {
       const img = new Image();
       img.onload = () => {
         loaded++;
-        if (loaded === $maxFrames[selector]) {
+        if (loaded === frames.length) {
           resolve();
         }
       };
-      img.src = `./${selector}/${i}.png`;
-    }
+      img.onerror = () => {
+        loaded++;
+        if (loaded === frames.length) {
+          resolve();
+        }
+      };
+      img.src = `./${key}/${i}`;
+    });
   });
 }
 
-const KEYS = ["pikacute", "bulbasuck"];
+console.log("config :>> ", config);
 
-window.addEventListener("load", () => {
-  Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
-    KEYS.forEach((key) => {
-      positionImage(key);
-    });
-    $startButton.classList.add("active");
+Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
+  KEYS.forEach((key) => {
+    $scene.appendChild(game.$[key].$image);
+    $trackers.appendChild(game.$[key].$progress);
+    renderPlayer(key);
   });
+  $startButton.classList.add("active");
 });
 
 $startButton.addEventListener("click", () => {
   $startButton.classList.remove("active");
 
   KEYS.forEach((key) => {
-    makeItRun(key);
+    advancePlayer(key);
   });
 });

@@ -99,22 +99,6 @@ body {
   line-height: 20px;
 }
 
-.pikacute-color {
-  color: #edaa3d;
-}
-
-.bulbasuck-color {
-  color: #468849;
-}
-
-#pikacute-tracker .subtracker {
-  background-color: #edaa3d;
-}
-
-#bulbasuck-tracker .subtracker {
-  background-color: #468849;
-}
-
 #winner {
   text-align: center;
 }
