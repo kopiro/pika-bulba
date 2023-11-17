@@ -1,4 +1,4 @@
-const GOAL = 100;
+const GOAL = 1000;
 const $winner = document.querySelector("#winner");
 
 const $frames = {
@@ -31,7 +31,6 @@ function makeItRun(selector) {
 
     const percent = Math.min(100, ($track[selector] / GOAL) * 100);
     $trackers[selector].style.transform = `translateX(-${100 - percent}%)`;
-    console.log("percent :>> ", percent);
 
     if (percent >= 100) {
       $selectors[selector].src = `/${selector}/0.gif`;
