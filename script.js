@@ -19,8 +19,8 @@ const KEYS = Object.keys(config.$);
 const game = KEYS.reduce(
   (acc, key) => {
     acc.$[key] = {
+      x: config.$[key].xOffset,
       z: 0,
-      x: 0,
       frame: 0,
       $image: (() => {
         const img = new Image();
@@ -47,14 +47,20 @@ const game = KEYS.reduce(
 );
 
 function renderPlayer(key) {
+  // Limit the x position to the cube size
+  game.$[key].x = Math.min(
+    CUBE_SIZE / 2 - IMG_OFFSET,
+    Math.max(-(CUBE_SIZE / 2) + IMG_OFFSET, game.$[key].x)
+  );
+  game.$[key].z = Math.max(0, Math.min(GOAL, game.$[key].z));
+
   const ratio = Math.min(1, game.$[key].z / GOAL);
   const z = Z_START + (Z_END - Z_START) * ratio;
-  const x = game.$[key].x + config.$[key].xOffset;
 
   game.$[key].$image.src = `./${key}/${1 + game.$[key].frame}.png`;
   game.$[
     key
-  ].$image.style.transform = `translate3d(${x}px, ${CUBE_SIZE}px, ${z}px)`;
+  ].$image.style.transform = `translate3d(${game.$[key].x}px, ${CUBE_SIZE}px, ${z}px)`;
 
   const meters = Math.floor(ROAD_METERS * ratio);
   game.$[key].$progress.firstChild.textContent = `${meters}m`;
@@ -129,6 +135,38 @@ function preloadImages(key) {
   });
 }
 
+function handleAccelerometer() {
+  // If we have an accelerometer in the device, use it to move X of the player based on the inclination of the phone (DeviceMotion)
+  if (
+    window.DeviceMotionEvent &&
+    typeof DeviceMotionEvent.requestPermission === "function"
+  ) {
+    // Request permissions
+    DeviceMotionEvent.requestPermission()
+      .then((permissionState) => {
+        if (permissionState === "granted") {
+          window.addEventListener("devicemotion", (event) => {
+            const x = event.accelerationIncludingGravity.x;
+            const y = event.accelerationIncludingGravity.y;
+            const z = event.accelerationIncludingGravity.z;
+
+            KEYS.forEach((key) => {
+              game.$[key].x += x / 10;
+              renderPlayer(key);
+            });
+          });
+        }
+      })
+      .catch(console.error);
+  }
+}
+
+function startRace() {
+  KEYS.forEach((key) => {
+    advancePlayer(key);
+  });
+}
+
 console.log("config :>> ", config);
 
 Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
@@ -142,8 +180,6 @@ Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
 
 $startButton.addEventListener("click", () => {
   $startButton.classList.remove("active");
-
-  KEYS.forEach((key) => {
-    advancePlayer(key);
-  });
+  handleAccelerometer();
+  startRace();
 });
