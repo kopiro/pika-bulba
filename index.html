@@ -8,13 +8,22 @@
   </head>
   <body>
     <div id="container">
-      <div id="imgs">
-        <img class="img" id="pikacute" />
-        <img class="img" id="bulbasuck" />
+      <div id="screen">
+        <div id="scene">
+          <div id="goal"></div>
+          <div id="start"></div>
+          <div id="road"></div>
+          <img class="img" id="pikacute-img" />
+          <img class="img" id="bulbasuck-img" />
+        </div>
       </div>
       <div id="trackers">
-        <div class="tracker" id="pikacute-tracker"><span></span></div>
-        <div class="tracker" id="bulbasuck-tracker"><span></span></div>
+        <div class="tracker" id="pikacute-tracker">
+          <span class="subtracker"></span>
+        </div>
+        <div class="tracker" id="bulbasuck-tracker">
+          <span class="subtracker"></span>
+        </div>
       </div>
       <div id="winner"></div>
     </div>
