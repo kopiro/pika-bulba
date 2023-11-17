@@ -27,13 +27,13 @@ function makeItRun(selector) {
   requestAnimationFrame(() => {
     $track[selector]++;
     $frames[selector] = ($frames[selector] + 1) % 10;
-    $selectors[selector].src = `/${selector}/${$frames[selector]}.gif`;
+    $selectors[selector].src = `./${selector}/${$frames[selector]}.gif`;
 
     const percent = Math.min(100, ($track[selector] / GOAL) * 100);
     $trackers[selector].style.transform = `translateX(-${100 - percent}%)`;
 
     if (percent >= 100) {
-      $selectors[selector].src = `/${selector}/0.gif`;
+      $selectors[selector].src = `./${selector}/0.gif`;
 
       if (!winner) {
         winner = selector;
