@@ -1,4 +1,4 @@
-const GOAL = 500;
+const GOAL = 50;
 const $winner = document.querySelector("#winner");
 
 const $frames = {
@@ -33,7 +33,7 @@ function makeItRun(selector) {
     $trackers[selector].style.transform = `translateX(-${100 - percent}%)`;
 
     if (percent >= 100) {
-      $selectors[selector].src = `./${selector}/0.gif`;
+      $selectors[selector].src = `./${selector}/win.gif`;
 
       if (!winner) {
         winner = selector;
