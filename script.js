@@ -7,9 +7,10 @@ const Z_START = -(CUBE_SIZE / 2);
 const Z_END = CUBE_SIZE / 2;
 const IMG_OFFSET = 30;
 const FPS = 1000 / 60;
-const MAX_ADVANCE = 250;
+const MAX_ADVANCE = 100;
+const ROAD_METERS = 1000;
 
-const GOAL = MAX_ADVANCE * 500;
+const GOAL = MAX_ADVANCE * 300;
 
 const $frames = {
   pikacute: 0,
@@ -46,10 +47,13 @@ let winner = null;
 function positionImage(selector) {
   const ratio = Math.min(1, $position[selector] / GOAL);
   const z = Z_START + (Z_END - Z_START) * ratio;
+
   $images[selector].src = `./${selector}/${1 + $frames[selector]}.png`;
   $images[
     selector
   ].style.transform = `translate3d(${$xOffsets[selector]}px, ${CUBE_SIZE}px, ${z}px)`;
+
+  $progress[selector].textContent = `${Math.floor(ROAD_METERS * ratio)}m`;
   $progress[selector].style.transform = `translateX(-${(1 - ratio) * 100}%)`;
 }
 
@@ -110,6 +114,8 @@ window.addEventListener("load", () => {
 });
 
 $startButton.addEventListener("click", () => {
+  $startButton.classList.remove("active");
+
   KEYS.forEach((key) => {
     makeItRun(key);
   });
