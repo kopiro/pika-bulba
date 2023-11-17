@@ -1,4 +1,5 @@
 const $winner = document.querySelector("#winner");
+const $startButton = document.querySelector("#start-button");
 
 const CUBE_SIZE = 300; // sync with CSS!!
 
@@ -6,7 +7,7 @@ const Z_START = -(CUBE_SIZE / 2);
 const Z_END = CUBE_SIZE / 2;
 const IMG_OFFSET = 30;
 const FPS = 1000 / 60;
-const MAX_ADVANCE = 100;
+const MAX_ADVANCE = 250;
 
 const GOAL = MAX_ADVANCE * 500;
 
@@ -15,19 +16,24 @@ const $frames = {
   bulbasuck: 0,
 };
 
+const $maxFrames = {
+  pikacute: 10,
+  bulbasuck: 23,
+};
+
 const $xOffsets = {
   pikacute: -IMG_OFFSET,
   bulbasuck: IMG_OFFSET,
 };
 
-const $images = {
-  pikacute: document.querySelector("#pikacute-img"),
-  bulbasuck: document.querySelector("#bulbasuck-img"),
-};
-
 const $position = {
   pikacute: 0,
   bulbasuck: 0,
+};
+
+const $images = {
+  pikacute: document.querySelector("#pikacute-img"),
+  bulbasuck: document.querySelector("#bulbasuck-img"),
 };
 
 const $progress = {
@@ -37,30 +43,29 @@ const $progress = {
 
 let winner = null;
 
+function positionImage(selector) {
+  const ratio = Math.min(1, $position[selector] / GOAL);
+  const z = Z_START + (Z_END - Z_START) * ratio;
+  $images[selector].src = `./${selector}/${1 + $frames[selector]}.png`;
+  $images[
+    selector
+  ].style.transform = `translate3d(${$xOffsets[selector]}px, ${CUBE_SIZE}px, ${z}px)`;
+  $progress[selector].style.transform = `translateX(-${(1 - ratio) * 100}%)`;
+}
+
 function makeItRun(selector) {
   requestAnimationFrame(() => {
     const advanceBy = Math.floor(Math.random() * MAX_ADVANCE);
     $position[selector] = Math.min(GOAL, $position[selector] + advanceBy);
+    $frames[selector] = ($frames[selector] + 1) % $maxFrames[selector];
 
-    $frames[selector] = ($frames[selector] + 1) % 10;
-    $images[selector].src = `./${selector}/${$frames[selector]}.gif`;
+    positionImage(selector);
 
-    const ratio = Math.min(1, $position[selector] / GOAL);
-    $progress[selector].style.transform = `translateX(-${(1 - ratio) * 100}%)`;
-
-    const z = Z_START + (Z_END - Z_START) * ratio;
-    $images[selector].style.transform = `translate3d(${
-      CUBE_SIZE / 2 + $xOffsets[selector]
-    }px, ${CUBE_SIZE}px, ${z}px)`;
-
-    if ($position[selector] >= GOAL) {
-      $position[selector] = GOAL;
+    if ($position[selector] === GOAL) {
       $images[selector].src = `./${selector}/win.gif`;
 
       if (!winner) {
-        winner = selector;
-        $winner.textContent = `${selector} won!`;
-        $winner.classList.add(`${selector}-color`);
+        declareWinner(selector);
       }
       return;
     }
@@ -71,17 +76,41 @@ function makeItRun(selector) {
   });
 }
 
-function preload(selector) {
-  for (let i = 0; i < 10; i++) {
-    const img = new Image();
-    img.src = `./${selector}/${i}.gif`;
-  }
+function declareWinner(selector) {
+  winner = selector;
+  $winner.textContent = `${selector} won!`;
+  $winner.classList.add(`${selector}-color`);
 }
 
-preload("pikacute");
-preload("bulbasuck");
+function preloadImages(selector) {
+  return new Promise((resolve) => {
+    let loaded = 0;
+    for (let i = 1; i <= $maxFrames[selector]; i++) {
+      const img = new Image();
+      img.onload = () => {
+        loaded++;
+        if (loaded === $maxFrames[selector]) {
+          resolve();
+        }
+      };
+      img.src = `./${selector}/${i}.png`;
+    }
+  });
+}
+
+const KEYS = ["pikacute", "bulbasuck"];
 
 window.addEventListener("load", () => {
-  makeItRun("pikacute");
-  makeItRun("bulbasuck");
+  Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
+    KEYS.forEach((key) => {
+      positionImage(key);
+    });
+    $startButton.classList.add("active");
+  });
+});
+
+$startButton.addEventListener("click", () => {
+  KEYS.forEach((key) => {
+    makeItRun(key);
+  });
 });

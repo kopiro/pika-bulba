@@ -8,15 +8,25 @@ body {
   box-sizing: border-box;
 }
 
+#container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  display: block;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
 #screen {
   width: var(--screen-size);
   height: var(--screen-size);
   position: relative;
   margin: 0 auto;
-  margin-bottom: 40px;
-  /* border: 1px dashed black; */
-  perspective-origin: 85% 60%;
-  perspective: 100px;
+  perspective-origin: 120% -40%;
+  perspective: 200px;
 }
 
 #screen * {
@@ -35,7 +45,7 @@ body {
   width: var(--screen-size);
   height: var(--screen-size);
   /* background: hsla(300, 100%, 50%, 0.2); */
-  background-color: white;
+  background-color: #f9f9f9;
   border: 2px solid #333;
   transform: rotateX(-90deg) translate3d(0, 0, var(--screen-translation));
 }
@@ -63,35 +73,19 @@ body {
   margin-top: -40px;
 }
 
-#container {
-  width: 100%;
-  max-width: 400px;
-  margin: 0 auto;
-  display: block;
-}
-
-#imgs {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 0 auto;
-}
-
 #trackers {
   display: flex;
   align-items: center;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 20px;
 }
 
 .tracker {
-  width: 100%;
+  width: var(--screen-size);
   height: 20px;
-  border: 1px solid #ddd;
+  outline: 1px solid #ddd;
   overflow: hidden;
+  border: 3px solid white;
 }
 
 .subtracker {
@@ -119,4 +113,13 @@ body {
 
 #winner {
   text-align: center;
+}
+
+#start-button {
+  width: 100px;
+  display: none;
+}
+
+#start-button.active {
+  display: block;
 }
