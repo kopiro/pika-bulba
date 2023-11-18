@@ -6,10 +6,12 @@ const $options = document.querySelector("#options");
 const $scene = document.querySelector("#scene");
 const $trackers = document.querySelector("#trackers");
 
+// Static values from CSS
 const TRACK_WIDTH = getCSSVar("--track-width");
 const IMG_SIZE = getCSSVar("--img-size");
 const INFINITE_TRACK_LENGTH = getCSSVar("--infinite-track-length");
 
+// Static values
 const FPS = 1000 / 60;
 const MIN_ADVANCE = 1;
 const MAX_ADVANCE = 10;
@@ -50,6 +52,10 @@ const game = KEYS.reduce(
     $: {},
   }
 );
+
+function getAdvanceBy(key) {
+  return MIN_ADVANCE + Math.floor(Math.random() * MAX_ADVANCE);
+}
 
 function prepareSceneAddBushes() {
   // Put the bushes in the scene
@@ -92,24 +98,34 @@ function renderPlayer(key) {
   );
   game.$[key].z = Math.max(0, Math.min(TRACK_LENGTH, game.$[key].z));
 
-  if (game.winner === key || game.loser === key) {
-    // Do not redraw when we already declared winner or loser
-    return;
+  const { x, z, frame } = game.$[key];
+  const ratio = z / TRACK_LENGTH;
+
+  if (game.winner === key) {
+    const winGif = `./${key}/win.gif`;
+    if (game.$[key].$image.dataset.src !== winGif) {
+      game.$[key].$image.dataset.src = winGif;
+      game.$[key].$image.src = winGif;
+    }
+  } else if (game.loser === key) {
+    const lostGif = `./${key}/lost.gif`;
+    if (game.$[key].$image.dataset.src !== lostGif) {
+      game.$[key].$image.dataset.src = lostGif;
+      game.$[key].$image.src = lostGif;
+    }
+  } else {
+    const nextFrame = `./${key}/${frame + 1}.png`;
+    game.$[key].$image.src = nextFrame;
+
+    game.$[key].$progress.firstChild.textContent = `${Math.floor(z)}m`;
+    game.$[key].$progress.firstChild.style.transform = `translateX(-${
+      (1 - ratio) * 100
+    }%)`;
   }
 
-  const ratio = Math.min(1, game.$[key].z / TRACK_LENGTH);
-  const z = -(TRACK_LENGTH * (1 - ratio));
+  const cssZ = -TRACK_LENGTH + z;
 
-  game.$[key].$image.src = `./${key}/${1 + game.$[key].frame}.png`;
-  game.$[
-    key
-  ].$image.style.transform = `translate3d(${game.$[key].x}px, 0, ${z}px)`;
-
-  const meters = Math.floor(TRACK_LENGTH * ratio);
-  game.$[key].$progress.firstChild.textContent = `${meters}m`;
-  game.$[key].$progress.firstChild.style.transform = `translateX(-${
-    (1 - ratio) * 100
-  }%)`;
+  game.$[key].$image.style.transform = `translate3d(${x}px, 0, ${cssZ}px)`;
 }
 
 let then = null;
@@ -140,18 +156,17 @@ function advancePlayer(key) {
     return;
   }
 
-  const advanceBy =
-    MIN_ADVANCE + Math.floor(Math.random() * (MAX_ADVANCE - MIN_ADVANCE));
-
-  // Apply a bit of noise to the x position
-  game.$[key].x += -X_NOISE + Math.random() * X_NOISE * 2;
-
+  // Move player
+  const advanceBy = getAdvanceBy(key);
   game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z + advanceBy);
+
+  const xNoise = -X_NOISE + Math.random() * X_NOISE * 2;
+  game.$[key].x += xNoise;
+
+  // Advance next frame of the GIF
   game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
 
   if (game.$[key].z >= TRACK_LENGTH) {
-    renderPlayer(key);
-
     if (game.winner === null) {
       declareWinner(key);
     } else if (game.winner !== key) {
@@ -164,7 +179,6 @@ function declareWinner(key) {
   if (game.winner) return;
 
   game.winner = key;
-  game.$[key].$image.src = `./${key}/win.gif`;
   game.$[key].$progress.firstChild.textContent = "finished";
   $winner.textContent = `${key} won!`;
   $winner.style.color = config.$[key].color;
@@ -174,7 +188,6 @@ function declareLoser(key) {
   if (game.loser) return;
 
   game.loser = key;
-  game.$[key].$image.src = `./${key}/lost.gif`;
   game.$[key].$progress.firstChild.textContent = "finished";
 }
 
@@ -226,7 +239,6 @@ function handleAccelerometer() {
 
             KEYS.forEach((key) => {
               game.$[key].x += x / 10;
-              renderPlayer(key);
             });
           });
         }
