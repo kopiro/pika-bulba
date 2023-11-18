@@ -40,6 +40,7 @@ const game = KEYS.reduce(
     return acc;
   },
   {
+    started: false,
     winner: null,
     loser: null,
     $: {},
@@ -53,6 +54,11 @@ function renderPlayer(key) {
     Math.max(-(CUBE_SIZE / 2) + IMG_OFFSET, game.$[key].x)
   );
   game.$[key].z = Math.max(0, Math.min(GOAL, game.$[key].z));
+
+  if (game.winner === key || game.loser === key) {
+    // Do not redraw when we already declared winner or loser
+    return;
+  }
 
   const ratio = Math.min(1, game.$[key].z / GOAL);
   const z = Z_START + (Z_END - Z_START) * ratio;
@@ -69,43 +75,65 @@ function renderPlayer(key) {
   }%)`;
 }
 
-function advancePlayer(key) {
-  requestAnimationFrame(() => {
-    const advanceBy = Math.floor(Math.random() * MAX_ADVANCE);
+let then = null;
 
-    game.$[key].z = Math.min(GOAL, game.$[key].z + advanceBy);
-    game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
+function renderingLoop() {
+  requestAnimationFrame(renderingLoop);
 
-    // Apply a bit of noise to the x position
-    game.$[key].x += -X_NOISE + Math.random() * X_NOISE * 2;
+  let now = Date.now();
+  let deltaTime = now - then;
 
+  if (deltaTime <= FPS) return;
+  then = now - (deltaTime % FPS);
+
+  KEYS.forEach((key) => {
     renderPlayer(key);
-
-    if (game.$[key].z === GOAL) {
-      if (!game.winner) {
-        declareWinner(key);
-      } else {
-        declareLoser(key);
-      }
-      return;
-    }
-
-    setTimeout(() => {
-      advancePlayer(key);
-    }, FPS);
   });
+
+  if (game.started) {
+    KEYS.forEach((key) => {
+      advancePlayer(key);
+    });
+  }
+}
+
+function advancePlayer(key) {
+  if (game.winner === key || game.loser === key) {
+    // Do not advance when we already declared winner or loser
+    return;
+  }
+
+  const advanceBy = Math.floor(Math.random() * MAX_ADVANCE);
+
+  game.$[key].z = Math.min(GOAL, game.$[key].z + advanceBy);
+  game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
+
+  // Apply a bit of noise to the x position
+  game.$[key].x += -X_NOISE + Math.random() * X_NOISE * 2;
+
+  if (game.$[key].z === GOAL) {
+    if (game.winner === null) {
+      declareWinner(key);
+    } else if (game.winner !== key) {
+      declareLoser(key);
+    }
+  }
 }
 
 function declareWinner(key) {
+  if (game.winner) return;
   game.winner = key;
   game.$[key].$image.src = `./${key}/win.gif`;
+  game.$[key].$progress.firstChild.textContent = "finished";
   $winner.textContent = `${key} won!`;
   $winner.style.color = config.$[key].color;
 }
 
 function declareLoser(key) {
+  if (game.loser) return;
   game.loser = key;
   game.$[key].$image.src = `./${key}/lost.gif`;
+  game.$[key].$progress.firstChild.textContent = "finished";
 }
 
 function preloadImages(key) {
@@ -162,9 +190,7 @@ function handleAccelerometer() {
 }
 
 function startRace() {
-  KEYS.forEach((key) => {
-    advancePlayer(key);
-  });
+  game.started = true;
 }
 
 console.log("config :>> ", config);
@@ -173,7 +199,6 @@ Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
   KEYS.forEach((key) => {
     $scene.appendChild(game.$[key].$image);
     $trackers.appendChild(game.$[key].$progress);
-    renderPlayer(key);
   });
   $startButton.classList.add("active");
 });
@@ -183,3 +208,5 @@ $startButton.addEventListener("click", () => {
   handleAccelerometer();
   startRace();
 });
+
+renderingLoop();
