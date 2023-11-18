@@ -9,19 +9,14 @@ const $trackers = document.querySelector("#trackers");
 const TRACK_WIDTH = getCSSVar("--track-width");
 const IMG_SIZE = getCSSVar("--img-size");
 const INFINITE_TRACK_LENGTH = getCSSVar("--infinite-track-length");
-const TRACK_LENGTH = getCSSVar("--track-length");
-
-const Z_START = -TRACK_LENGTH;
-const Z_END = 0;
 
 const FPS = 1000 / 60;
 const MIN_ADVANCE = 1;
-const MAX_ADVANCE = 100;
+const MAX_ADVANCE = 10;
 const X_NOISE = 1;
 
 // Determined at runtime
-let OPT_TRACK_LENGTH;
-let GOAL;
+let TRACK_LENGTH;
 
 const KEYS = Object.keys(config.$);
 
@@ -76,7 +71,13 @@ function prepareSceneAddBushes() {
   });
 }
 
-function prepareSceneSetLines() {}
+function prepareSceneSetLines() {
+  document.querySelector(
+    "#road-start-line"
+  ).style.transform = `translate3d(-50%, -50%, ${
+    -1 * TRACK_LENGTH
+  }px) rotateX(90deg)`;
+}
 
 function prepareScene() {
   prepareSceneSetLines();
@@ -89,22 +90,22 @@ function renderPlayer(key) {
     TRACK_WIDTH / 2 - IMG_SIZE,
     Math.max(-(TRACK_WIDTH / 2) + IMG_SIZE, game.$[key].x)
   );
-  game.$[key].z = Math.max(0, Math.min(GOAL, game.$[key].z));
+  game.$[key].z = Math.max(0, Math.min(TRACK_LENGTH, game.$[key].z));
 
   if (game.winner === key || game.loser === key) {
     // Do not redraw when we already declared winner or loser
     return;
   }
 
-  const ratio = Math.min(1, game.$[key].z / GOAL);
-  const z = Z_START + (Z_END - Z_START) * ratio;
+  const ratio = Math.min(1, game.$[key].z / TRACK_LENGTH);
+  const z = -(TRACK_LENGTH * (1 - ratio));
 
   game.$[key].$image.src = `./${key}/${1 + game.$[key].frame}.png`;
   game.$[
     key
   ].$image.style.transform = `translate3d(${game.$[key].x}px, 0, ${z}px)`;
 
-  const meters = Math.floor(OPT_TRACK_LENGTH * ratio);
+  const meters = Math.floor(TRACK_LENGTH * ratio);
   game.$[key].$progress.firstChild.textContent = `${meters}m`;
   game.$[key].$progress.firstChild.style.transform = `translateX(-${
     (1 - ratio) * 100
@@ -142,13 +143,13 @@ function advancePlayer(key) {
   const advanceBy =
     MIN_ADVANCE + Math.floor(Math.random() * (MAX_ADVANCE - MIN_ADVANCE));
 
-  game.$[key].z = Math.min(GOAL, game.$[key].z + advanceBy);
-  game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
-
   // Apply a bit of noise to the x position
   game.$[key].x += -X_NOISE + Math.random() * X_NOISE * 2;
 
-  if (game.$[key].z >= GOAL) {
+  game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z + advanceBy);
+  game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
+
+  if (game.$[key].z >= TRACK_LENGTH) {
     renderPlayer(key);
 
     if (game.winner === null) {
@@ -239,8 +240,13 @@ function startRace() {
 }
 
 function readOptions() {
-  OPT_TRACK_LENGTH = document.querySelector("#opt-track-length").value;
-  GOAL = MAX_ADVANCE * OPT_TRACK_LENGTH;
+  TRACK_LENGTH = document.querySelector("#opt-track-length").value;
+}
+
+function main() {
+  readOptions();
+  prepareScene();
+  renderingLoop();
 }
 
 console.log("config :>> ", config);
@@ -262,6 +268,9 @@ $startButton.addEventListener("click", () => {
   startRace();
 });
 
-readOptions();
-prepareScene();
-renderingLoop();
+document.querySelector("#opt-track-length").addEventListener("input", () => {
+  readOptions();
+  prepareSceneSetLines();
+});
+
+main();
