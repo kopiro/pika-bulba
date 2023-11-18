@@ -1,16 +1,19 @@
+const $css = getComputedStyle(document.documentElement);
+
 const $winner = document.querySelector("#winner");
 const $startButton = document.querySelector("#start-button");
 const $options = document.querySelector("#options");
 const $scene = document.querySelector("#scene");
 const $trackers = document.querySelector("#trackers");
 
-// sync with CSS!!
-const TRACK_WIDTH = 300;
-const TRACK_LENGTH = 750;
-const IMG_SIZE = 40;
+const TRACK_WIDTH = getCSSVar("--track-width");
+const IMG_SIZE = getCSSVar("--img-size");
+const INFINITE_TRACK_LENGTH = getCSSVar("--infinite-track-length");
+const TRACK_LENGTH = getCSSVar("--track-length");
 
-const Z_START = -TRACK_LENGTH + IMG_SIZE * 2;
-const Z_END = -IMG_SIZE / 4;
+const Z_START = -TRACK_LENGTH;
+const Z_END = 0;
+
 const FPS = 1000 / 60;
 const MIN_ADVANCE = 1;
 const MAX_ADVANCE = 100;
@@ -53,20 +56,31 @@ const game = KEYS.reduce(
   }
 );
 
-function prepareScene() {
+function prepareSceneAddBushes() {
   // Put the bushes in the scene
   const BUSH_OFFSET = 16;
-  const BUSH_DENSITY = 10;
+  const BUSH_DENSITY = 20;
   [-TRACK_WIDTH + BUSH_OFFSET, TRACK_WIDTH - BUSH_OFFSET].forEach((x) => {
     for (let i = 0; i < BUSH_DENSITY; i++) {
       const $bush = document.createElement("div");
-      $bush.className = "bush";
+      $bush.className =
+        "bush" +
+        (Math.floor(Math.random() * 4) % 2 === 0
+          ? " bush-style"
+          : " rock-style");
       $bush.style.transform = `translate3d(${x / 2}px, 0, ${
-        -1 * Math.random() * (TRACK_LENGTH - BUSH_OFFSET * 2)
+        -1 * Math.random() * (INFINITE_TRACK_LENGTH - BUSH_OFFSET * 2)
       }px)`;
       $scene.appendChild($bush);
     }
   });
+}
+
+function prepareSceneSetLines() {}
+
+function prepareScene() {
+  prepareSceneSetLines();
+  prepareSceneAddBushes();
 }
 
 function renderPlayer(key) {
@@ -161,6 +175,10 @@ function declareLoser(key) {
   game.loser = key;
   game.$[key].$image.src = `./${key}/lost.gif`;
   game.$[key].$progress.firstChild.textContent = "finished";
+}
+
+function getCSSVar(key) {
+  return Number($css.getPropertyValue(key).replace("px", ""));
 }
 
 function preloadImages(key) {

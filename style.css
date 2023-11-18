@@ -1,8 +1,13 @@
-body {
-  font-family: "Comic Sans MS", "Comic Sans", cursive;
+html {
   --screen-size: 300px;
   --track-width: 300px;
-  --track-length: 750px;
+  --track-length: 2000px;
+  --infinite-track-length: 9000px;
+  --img-size: 40px;
+}
+
+body {
+  font-family: "Comic Sans MS", "Comic Sans", cursive;
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   color: #23643c;
@@ -44,8 +49,14 @@ body {
   height: var(--screen-size);
   position: relative;
   margin: 0 auto;
-  perspective-origin: 140% -70%;
-  perspective: 600px;
+  perspective-origin: 120% -20%;
+  perspective: 1000px;
+}
+
+#scene {
+  position: absolute;
+  transform: translate3d(30px, 430px, -400px);
+  transform-style: preserve-3d;
 }
 
 body.debug #screen {
@@ -56,16 +67,10 @@ body.debug #screen {
   position: absolute;
 }
 
-#scene {
-  position: absolute;
-  transform: translate3d(0px, 550px, calc(-1 * var(--screen-size)));
-  transform-style: preserve-3d;
-}
-
 #start {
   width: var(--track-width);
   height: 100px;
-  transform: translate3d(-50%, -100%, calc(-1 * var(--track-length)));
+  transform: translate3d(-50%, -100%, calc(-1 * var(--infinite-track-length)));
 }
 
 body.debug #start {
@@ -77,10 +82,6 @@ body.debug #start {
   width: var(--track-width);
   height: 300px;
   transform: translate3d(-50%, -100%, 0);
-  background: url(./img/flag.png) center no-repeat;
-  background-position-y: 100%;
-  background-size: 100% auto;
-  opacity: 0.5;
 }
 
 body.debug #goal {
@@ -90,16 +91,41 @@ body.debug #goal {
 
 #road {
   width: var(--track-width);
-  height: var(--track-length);
-  background: url(./img/racetrack.jpg) center no-repeat;
+  height: var(--infinite-track-length);
+  background: url(./img/road.png) repeat-y;
+  background-size: 100% auto;
+  transform: translate3d(
+      -50%,
+      -50%,
+      calc(-1 * var(--infinite-track-length) / 2)
+    )
+    rotateX(90deg);
+}
+
+#road-start-line {
+  width: var(--track-width);
+  height: 90px;
+  background: url(./img/final-line.jpg);
   background-size: 100% 100%;
-  transform: rotateX(90deg) translate3d(-50%, 0, var(--track-length));
-  transform-origin: bottom;
+  background-repeat: no-repeat;
+  background-position: center;
+  transform: translate3d(-50%, -50%, calc(-1 * var(--track-length)))
+    rotateX(90deg);
+}
+
+#road-final-line {
+  width: var(--track-width);
+  height: 90px;
+  background: url(./img/final-line.jpg);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  transform: translate3d(-50%, -50%, -90px) rotateX(90deg);
 }
 
 .img {
-  width: 40px;
-  height: 40px;
+  width: var(--img-size);
+  height: var(--img-size);
   margin-left: -20px;
   margin-top: -40px;
 }
@@ -166,6 +192,14 @@ body.debug #goal {
   height: 20px;
   margin-top: -20px;
   margin-left: -10px;
+}
+
+.bush.bush-style {
   background: url(./img/bush.png) center no-repeat;
+  background-size: 100% 100%;
+}
+
+.bush.rock-style {
+  background: url(./img/rock.png) center no-repeat;
   background-size: 100% 100%;
 }
