@@ -65,7 +65,7 @@ body.debug #screen {
 #start {
   width: var(--track-width);
   height: 100px;
-  transform: translate3d(-50%, -100%, 0);
+  transform: translate3d(-50%, -100%, calc(-1 * var(--track-length)));
 }
 
 body.debug #start {
@@ -75,8 +75,12 @@ body.debug #start {
 
 #goal {
   width: var(--track-width);
-  height: 100px;
-  transform: translate3d(-50%, -100%, calc(-1 * var(--track-length)));
+  height: 300px;
+  transform: translate3d(-50%, -100%, 0);
+  background: url(./img/flag.png) center no-repeat;
+  background-position-y: 100%;
+  background-size: 100% auto;
+  opacity: 0.5;
 }
 
 body.debug #goal {
