@@ -159,31 +159,31 @@ body.debug #goal {
   text-align: center;
 }
 
-#start-button {
-  line-height: 30px;
-  padding: 0 1em;
+button {
+  padding: 0.5rem 1rem;
   background-color: #eadc7a;
   border: 1px solid #999;
-  display: none;
   color: #23643c;
   font-size: 16px;
   font-weight: bold;
 }
 
-#start-button:hover {
+button:hover {
   opacity: 0.8;
-}
-
-#start-button.active {
-  display: block;
 }
 
 #options {
   display: none;
+  gap: 24px;
+  flex-direction: column;
 }
 
-#options.active {
-  display: block;
+body.game-ready #options {
+  display: flex;
+}
+
+body.game-started #options {
+  display: none;
 }
 
 .bush {

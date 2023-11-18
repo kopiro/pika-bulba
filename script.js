@@ -1,8 +1,8 @@
 const $css = getComputedStyle(document.documentElement);
 
 const $winner = document.querySelector("#winner");
-const $startButton = document.querySelector("#start-button");
-const $options = document.querySelector("#options");
+const $startAutorace = document.querySelector("#start-autorace");
+const $startCoop = document.querySelector("#start-coop");
 const $scene = document.querySelector("#scene");
 const $trackers = document.querySelector("#trackers");
 
@@ -16,6 +16,7 @@ const FPS = 1000 / 60;
 const MIN_ADVANCE = 1;
 const MAX_ADVANCE = 10;
 const X_NOISE = 1;
+const COOP_ADVANCE = 20;
 
 // Determined at runtime
 let TRACK_LENGTH;
@@ -47,6 +48,7 @@ const game = KEYS.reduce(
   },
   {
     started: false,
+    mode: null,
     winner: null,
     loser: null,
     $: {},
@@ -64,17 +66,27 @@ function prepareSceneAddBushes() {
   [-TRACK_WIDTH + BUSH_OFFSET, TRACK_WIDTH - BUSH_OFFSET].forEach((x) => {
     for (let i = 0; i < BUSH_DENSITY; i++) {
       const $bush = document.createElement("div");
-      $bush.className =
-        "bush" +
-        (Math.floor(Math.random() * 4) % 2 === 0
-          ? " bush-style"
-          : " rock-style");
+      $bush.className = "bush bush-style";
       $bush.style.transform = `translate3d(${x / 2}px, 0, ${
         -1 * Math.random() * (INFINITE_TRACK_LENGTH - BUSH_OFFSET * 2)
       }px)`;
       $scene.appendChild($bush);
     }
   });
+}
+
+function prepareSceneAddRocks() {
+  // Put the bushes in the scene
+  const maxX = TRACK_WIDTH / 2 - 16;
+  const ROCK_DENSITY = 20;
+  for (let i = 0; i < ROCK_DENSITY; i++) {
+    const $rock = document.createElement("div");
+    $rock.className = "bush rock-style";
+    $rock.style.transform = `translate3d(${
+      -maxX + Math.random() * (2 * maxX)
+    }px, 0, ${-1 * Math.random() * INFINITE_TRACK_LENGTH}px)`;
+    $scene.appendChild($rock);
+  }
 }
 
 function prepareSceneSetLines() {
@@ -85,9 +97,17 @@ function prepareSceneSetLines() {
   }px) rotateX(90deg)`;
 }
 
-function prepareScene() {
+async function prepareScene() {
   prepareSceneSetLines();
   prepareSceneAddBushes();
+  prepareSceneAddRocks();
+
+  KEYS.forEach((key) => {
+    $scene.appendChild(game.$[key].$image);
+    $trackers.appendChild(game.$[key].$progress);
+  });
+
+  await Promise.all(KEYS.map((key) => preloadImages(key)));
 }
 
 function renderPlayer(key) {
@@ -130,8 +150,8 @@ function renderPlayer(key) {
 
 let then = null;
 
-function renderingLoop() {
-  requestAnimationFrame(renderingLoop);
+function startRenderingLoop() {
+  requestAnimationFrame(startRenderingLoop);
 
   let now = Date.now();
   let deltaTime = now - then;
@@ -157,8 +177,10 @@ function advancePlayer(key) {
   }
 
   // Move player
-  const advanceBy = getAdvanceBy(key);
-  game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z + advanceBy);
+  if (game.mode === "auto") {
+    const advanceBy = getAdvanceBy(key);
+    game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z + advanceBy);
+  }
 
   const xNoise = -X_NOISE + Math.random() * X_NOISE * 2;
   game.$[key].x += xNoise;
@@ -247,42 +269,53 @@ function handleAccelerometer() {
   }
 }
 
-function startRace() {
-  game.started = true;
-}
-
 function readOptions() {
   TRACK_LENGTH = document.querySelector("#opt-track-length").value;
 }
 
-function main() {
+function startGame() {
+  if (game.started) return;
+
+  document.body.classList.add("game-started");
+
   readOptions();
-  prepareScene();
-  renderingLoop();
+  game.started = true;
+}
+
+async function main() {
+  readOptions();
+  await prepareScene();
+
+  document.body.classList.add("game-ready");
+
+  $startAutorace.addEventListener("click", () => {
+    game.mode = "auto";
+    handleAccelerometer();
+    startGame();
+  });
+
+  $startCoop.addEventListener("click", () => {
+    game.mode = "coop";
+    startGame();
+  });
+
+  document.querySelector("#opt-track-length").addEventListener("input", () => {
+    readOptions();
+    prepareSceneSetLines();
+  });
+
+  window.addEventListener("keyup", (e) => {
+    if (game.mode !== "coop") return;
+
+    KEYS.forEach((key) => {
+      if (e.key.toLowerCase() === key.substring(0, 1).toLowerCase()) {
+        game.$[key].z += COOP_ADVANCE;
+      }
+    });
+  });
+
+  startRenderingLoop();
 }
 
 console.log("config :>> ", config);
-
-Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
-  KEYS.forEach((key) => {
-    $scene.appendChild(game.$[key].$image);
-    $trackers.appendChild(game.$[key].$progress);
-  });
-  $startButton.classList.add("active");
-  $options.classList.add("active");
-});
-
-$startButton.addEventListener("click", () => {
-  $startButton.classList.remove("active");
-  $options.classList.remove("active");
-  readOptions();
-  handleAccelerometer();
-  startRace();
-});
-
-document.querySelector("#opt-track-length").addEventListener("input", () => {
-  readOptions();
-  prepareSceneSetLines();
-});
-
 main();
