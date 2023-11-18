@@ -145,6 +145,10 @@ body.debug #goal {
   font-weight: bold;
 }
 
+#start-button:hover {
+  opacity: 0.8;
+}
+
 #start-button.active {
   display: block;
 }
@@ -155,4 +159,13 @@ body.debug #goal {
 
 #options.active {
   display: block;
+}
+
+.bush {
+  width: 20px;
+  height: 20px;
+  margin-top: -20px;
+  margin-left: -10px;
+  background: url(./img/bush.png) center no-repeat;
+  background-size: 100% 100%;
 }

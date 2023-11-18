@@ -53,6 +53,22 @@ const game = KEYS.reduce(
   }
 );
 
+function prepareScene() {
+  // Put the bushes in the scene
+  const BUSH_OFFSET = 16;
+  const BUSH_DENSITY = 10;
+  [-TRACK_WIDTH + BUSH_OFFSET, TRACK_WIDTH - BUSH_OFFSET].forEach((x) => {
+    for (let i = 0; i < BUSH_DENSITY; i++) {
+      const $bush = document.createElement("div");
+      $bush.className = "bush";
+      $bush.style.transform = `translate3d(${x / 2}px, 0, ${
+        -1 * Math.random() * (TRACK_LENGTH - BUSH_OFFSET * 2)
+      }px)`;
+      $scene.appendChild($bush);
+    }
+  });
+}
+
 function renderPlayer(key) {
   // Limit the x position to the cube size
   game.$[key].x = Math.min(
@@ -229,4 +245,5 @@ $startButton.addEventListener("click", () => {
 });
 
 readOptions();
+prepareScene();
 renderingLoop();
