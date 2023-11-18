@@ -1,16 +1,21 @@
 body {
-  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+  font-family: "Comic Sans MS", "Comic Sans", cursive;
   --screen-size: 300px;
-  --screen-translation: 150px;
+  --track-width: 300px;
+  --track-length: 750px;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  color: #23643c;
 }
 
 * {
+  font-family: "Comic Sans MS", "Comic Sans", cursive;
   box-sizing: border-box;
 }
 
 #container {
   width: 100%;
-  max-width: 400px;
+  max-width: var(--screen-size);
   margin: 0 auto;
   display: block;
   text-align: center;
@@ -20,13 +25,31 @@ body {
   align-items: center;
 }
 
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.option label {
+  text-align: right;
+}
+
+.option input {
+  width: 150px;
+}
+
 #screen {
   width: var(--screen-size);
   height: var(--screen-size);
   position: relative;
   margin: 0 auto;
-  perspective-origin: 120% -40%;
-  perspective: 200px;
+  perspective-origin: 140% -70%;
+  perspective: 600px;
+}
+
+body.debug #screen {
+  border: 1px dashed black;
 }
 
 #screen * {
@@ -34,36 +57,40 @@ body {
 }
 
 #scene {
-  width: var(--screen-size);
-  height: var(--screen-size);
   position: absolute;
-  transform: translateZ(calc(-1 * var(--screen-translation)));
+  transform: translate3d(0px, 550px, calc(-1 * var(--screen-size)));
   transform-style: preserve-3d;
 }
 
-#road {
-  width: var(--screen-size);
-  height: var(--screen-size);
-  /* background: hsla(300, 100%, 50%, 0.2); */
-  background-color: #f9f9f9;
-  border: 2px solid #333;
-  transform: rotateX(-90deg) translate3d(0, 0, var(--screen-translation));
+#start {
+  width: var(--track-width);
+  height: 100px;
+  transform: translate3d(-50%, -100%, 0);
 }
 
-#start {
-  width: var(--screen-size);
-  height: var(--screen-size);
-  /* background: hsla(120, 100%, 50%, 0.2); */
-  /* border: 1px solid black; */
-  transform: translate3d(0, 0, calc(-1 * var(--screen-translation)));
+body.debug #start {
+  border: 1px solid black;
+  background: hsla(120, 100%, 50%, 0.2);
 }
 
 #goal {
-  width: var(--screen-size);
-  height: var(--screen-size);
-  /* background: hsla(0, 100%, 50%, 0.2); */
-  /* border: 1px solid black; */
-  transform: translate3d(0, 0, var(--screen-translation));
+  width: var(--track-width);
+  height: 100px;
+  transform: translate3d(-50%, -100%, calc(-1 * var(--track-length)));
+}
+
+body.debug #goal {
+  background: hsla(0, 100%, 50%, 0.2);
+  border: 1px solid black;
+}
+
+#road {
+  width: var(--track-width);
+  height: var(--track-length);
+  background: url(./img/racetrack.jpg) center no-repeat;
+  background-size: 100% 100%;
+  transform: rotateX(90deg) translate3d(-50%, 0, var(--track-length));
+  transform-origin: bottom;
 }
 
 .img {
@@ -81,7 +108,7 @@ body {
 }
 
 .tracker {
-  width: var(--screen-size);
+  width: var(--track-width);
   outline: 1px solid #ddd;
   overflow: hidden;
   border: 3px solid white;
@@ -104,10 +131,24 @@ body {
 }
 
 #start-button {
-  width: 100px;
+  line-height: 30px;
+  padding: 0 1em;
+  background-color: #eadc7a;
+  border: 1px solid #999;
   display: none;
+  color: #23643c;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 #start-button.active {
+  display: block;
+}
+
+#options {
+  display: none;
+}
+
+#options.active {
   display: block;
 }

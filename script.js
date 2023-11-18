@@ -1,18 +1,24 @@
 const $winner = document.querySelector("#winner");
 const $startButton = document.querySelector("#start-button");
+const $options = document.querySelector("#options");
 const $scene = document.querySelector("#scene");
 const $trackers = document.querySelector("#trackers");
 
-const CUBE_SIZE = 300; // sync with CSS!!
+// sync with CSS!!
+const TRACK_WIDTH = 300;
+const TRACK_LENGTH = 750;
+const IMG_SIZE = 40;
 
-const Z_START = -(CUBE_SIZE / 2);
-const Z_END = CUBE_SIZE / 2;
+const Z_START = -TRACK_LENGTH + IMG_SIZE * 2;
+const Z_END = -IMG_SIZE / 4;
 const FPS = 1000 / 60;
+const MIN_ADVANCE = 1;
 const MAX_ADVANCE = 100;
-const ROAD_METERS = 1000;
 const X_NOISE = 1;
 
-const GOAL = MAX_ADVANCE * 300;
+// Determined at runtime
+let OPT_TRACK_LENGTH;
+let GOAL;
 
 const KEYS = Object.keys(config.$);
 
@@ -50,8 +56,8 @@ const game = KEYS.reduce(
 function renderPlayer(key) {
   // Limit the x position to the cube size
   game.$[key].x = Math.min(
-    CUBE_SIZE / 2 - IMG_OFFSET,
-    Math.max(-(CUBE_SIZE / 2) + IMG_OFFSET, game.$[key].x)
+    TRACK_WIDTH / 2 - IMG_SIZE,
+    Math.max(-(TRACK_WIDTH / 2) + IMG_SIZE, game.$[key].x)
   );
   game.$[key].z = Math.max(0, Math.min(GOAL, game.$[key].z));
 
@@ -66,9 +72,9 @@ function renderPlayer(key) {
   game.$[key].$image.src = `./${key}/${1 + game.$[key].frame}.png`;
   game.$[
     key
-  ].$image.style.transform = `translate3d(${game.$[key].x}px, ${CUBE_SIZE}px, ${z}px)`;
+  ].$image.style.transform = `translate3d(${game.$[key].x}px, 0, ${z}px)`;
 
-  const meters = Math.floor(ROAD_METERS * ratio);
+  const meters = Math.floor(OPT_TRACK_LENGTH * ratio);
   game.$[key].$progress.firstChild.textContent = `${meters}m`;
   game.$[key].$progress.firstChild.style.transform = `translateX(-${
     (1 - ratio) * 100
@@ -86,15 +92,15 @@ function renderingLoop() {
   if (deltaTime <= FPS) return;
   then = now - (deltaTime % FPS);
 
-  KEYS.forEach((key) => {
-    renderPlayer(key);
-  });
-
   if (game.started) {
     KEYS.forEach((key) => {
       advancePlayer(key);
     });
   }
+
+  KEYS.forEach((key) => {
+    renderPlayer(key);
+  });
 }
 
 function advancePlayer(key) {
@@ -103,7 +109,8 @@ function advancePlayer(key) {
     return;
   }
 
-  const advanceBy = Math.floor(Math.random() * MAX_ADVANCE);
+  const advanceBy =
+    MIN_ADVANCE + Math.floor(Math.random() * (MAX_ADVANCE - MIN_ADVANCE));
 
   game.$[key].z = Math.min(GOAL, game.$[key].z + advanceBy);
   game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
@@ -111,7 +118,9 @@ function advancePlayer(key) {
   // Apply a bit of noise to the x position
   game.$[key].x += -X_NOISE + Math.random() * X_NOISE * 2;
 
-  if (game.$[key].z === GOAL) {
+  if (game.$[key].z >= GOAL) {
+    renderPlayer(key);
+
     if (game.winner === null) {
       declareWinner(key);
     } else if (game.winner !== key) {
@@ -122,6 +131,7 @@ function advancePlayer(key) {
 
 function declareWinner(key) {
   if (game.winner) return;
+
   game.winner = key;
   game.$[key].$image.src = `./${key}/win.gif`;
   game.$[key].$progress.firstChild.textContent = "finished";
@@ -131,6 +141,7 @@ function declareWinner(key) {
 
 function declareLoser(key) {
   if (game.loser) return;
+
   game.loser = key;
   game.$[key].$image.src = `./${key}/lost.gif`;
   game.$[key].$progress.firstChild.textContent = "finished";
@@ -193,6 +204,11 @@ function startRace() {
   game.started = true;
 }
 
+function readOptions() {
+  OPT_TRACK_LENGTH = document.querySelector("#opt-track-length").value;
+  GOAL = MAX_ADVANCE * OPT_TRACK_LENGTH;
+}
+
 console.log("config :>> ", config);
 
 Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
@@ -201,12 +217,16 @@ Promise.all(KEYS.map((key) => preloadImages(key))).then(() => {
     $trackers.appendChild(game.$[key].$progress);
   });
   $startButton.classList.add("active");
+  $options.classList.add("active");
 });
 
 $startButton.addEventListener("click", () => {
   $startButton.classList.remove("active");
+  $options.classList.remove("active");
+  readOptions();
   handleAccelerometer();
   startRace();
 });
 
+readOptions();
 renderingLoop();

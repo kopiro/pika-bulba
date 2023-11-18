@@ -1,14 +1,12 @@
-const IMG_OFFSET = 30;
-
 const config = {
   $: {
     pikacute: {
-      xOffset: -IMG_OFFSET,
+      xOffset: -50,
       maxFrames: 24,
       color: "#edaa3d",
     },
     bulbasuck: {
-      xOffset: IMG_OFFSET,
+      xOffset: 50,
       maxFrames: 23,
       color: "#468849",
     },

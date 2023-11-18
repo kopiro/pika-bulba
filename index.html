@@ -3,7 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <title>PikaBulba</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, user-scalable=no"
+    />
     <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body>
@@ -17,6 +20,19 @@
       </div>
       <div id="trackers"></div>
       <button id="start-button">Start race</button>
+      <div id="options">
+        <div class="option">
+          <label for="opt-track-length">track length</label>
+          <input
+            type="range"
+            min="10"
+            max="1000"
+            value="200"
+            step="1"
+            id="opt-track-length"
+          />
+        </div>
+      </div>
       <div id="winner"></div>
     </div>
     <script src="config.js"></script>
