@@ -77,6 +77,7 @@ function prepareSceneAddBushes() {
 
 function prepareSceneAddRocks() {
   // Put the bushes in the scene
+  const GOAL_OFFSET = 100;
   const maxX = TRACK_WIDTH / 2 - 16;
   const ROCK_DENSITY = 20;
   for (let i = 0; i < ROCK_DENSITY; i++) {
@@ -84,7 +85,9 @@ function prepareSceneAddRocks() {
     $rock.className = "bush rock-style";
     $rock.style.transform = `translate3d(${
       -maxX + Math.random() * (2 * maxX)
-    }px, 0, ${-1 * Math.random() * INFINITE_TRACK_LENGTH}px)`;
+    }px, 0, ${
+      -1 * (GOAL_OFFSET + Math.random() * (INFINITE_TRACK_LENGTH - GOAL_OFFSET))
+    }px)`;
     $scene.appendChild($rock);
   }
 }
