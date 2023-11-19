@@ -27,6 +27,7 @@ const game = KEYS.reduce(
   (acc, key) => {
     acc.$[key] = {
       x: config.$[key].xOffset,
+      y: 0,
       z: config.$[key].initialZ || 0,
       frame: 0,
       $image: (() => {
@@ -119,7 +120,7 @@ function renderPlayer(key) {
   );
   game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z);
 
-  const { x, z, frame } = game.$[key];
+  const { x, y, z, frame } = game.$[key];
   const ratio = z / TRACK_LENGTH;
 
   if (game.winner === key) {
@@ -143,7 +144,7 @@ function renderPlayer(key) {
 
   const cssZ = -TRACK_LENGTH + z;
 
-  game.$[key].$image.style.transform = `translate3d(${x}px, 0, ${cssZ}px)`;
+  game.$[key].$image.style.transform = `translate3d(${x}px, ${y}px, ${cssZ}px)`;
   game.$[key].$progress.firstChild.style.transform = `translateX(-${
     (1 - ratio) * 100
   }%)`;
@@ -155,6 +156,7 @@ function startRenderingLoop() {
   requestAnimationFrame(startRenderingLoop);
 
   let now = Date.now();
+
   let deltaTime = now - then;
 
   if (deltaTime <= FPS) return;
@@ -162,7 +164,7 @@ function startRenderingLoop() {
 
   if (game.started) {
     KEYS.forEach((key) => {
-      advancePlayer(key);
+      advancePlayer(key, now);
     });
   }
 
@@ -171,29 +173,35 @@ function startRenderingLoop() {
   });
 }
 
-function advancePlayer(key) {
-  if (game.winner === key || game.loser === key) {
-    // Do not advance when we already declared winner or loser
-    return;
-  }
+function flyUpEquation(t) {
+  // Map t in radians
+  return 130 * t + 3 * Math.sin(20 * t);
+}
 
-  // Move player
-  if (game.mode === "auto") {
-    const advanceBy = getAdvanceBy(key);
-    game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z + advanceBy);
-  }
+function advancePlayer(key, now) {
+  if (game.winner === key) {
+    const timeSinceWin = (now - game.$[key].wonAt) / 1000;
+    game.$[key].y = -flyUpEquation(timeSinceWin);
+  } else if (game.loser === key) {
+  } else {
+    // Move player
+    if (game.mode === "auto") {
+      const advanceBy = getAdvanceBy(key);
+      game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z + advanceBy);
+    }
 
-  const xNoise = -X_NOISE + Math.random() * X_NOISE * 2;
-  game.$[key].x += xNoise;
+    const xNoise = -X_NOISE + Math.random() * X_NOISE * 2;
+    game.$[key].x += xNoise;
 
-  // Advance next frame of the GIF
-  game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
+    // Advance next frame of the GIF
+    game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
 
-  if (game.$[key].z >= TRACK_LENGTH) {
-    if (game.winner === null) {
-      declareWinner(key);
-    } else if (game.winner !== key) {
-      declareLoser(key);
+    if (game.$[key].z >= TRACK_LENGTH) {
+      if (game.winner === null) {
+        declareWinner(key);
+      } else if (game.winner !== key) {
+        declareLoser(key);
+      }
     }
   }
 }
@@ -202,6 +210,8 @@ function declareWinner(key) {
   if (game.winner) return;
 
   game.winner = key;
+  game.$[key].wonAt = Date.now();
+
   game.$[key].$progress.firstChild.textContent = "finished";
   $winner.textContent = `${key} won!`;
   $winner.style.color = config.$[key].color;
