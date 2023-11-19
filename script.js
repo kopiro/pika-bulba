@@ -175,7 +175,7 @@ function startRenderingLoop() {
 
 function flyUpEquation(t) {
   // Map t in radians
-  return 130 * t + 3 * Math.sin(20 * t);
+  return 130 * t + 5 * Math.sin(20 * t);
 }
 
 function advancePlayer(key, now) {
