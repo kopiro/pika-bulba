@@ -1,19 +1,23 @@
+@font-face {
+  font-family: "Font";
+  src: url("./font.ttf");
+}
+
 html {
   --screen-size: 300px;
   --track-width: 300px;
-  --infinite-track-length: 9000px;
+  --infinite-track-length: 5000px;
   --img-size: 40px;
+  --primary-color: #23643c;
 }
 
 body {
-  font-family: "Comic Sans MS", "Comic Sans", cursive;
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  color: #23643c;
+  font-size: 12px;
 }
 
 * {
-  font-family: "Comic Sans MS", "Comic Sans", cursive;
+  font-family: Font, monospace;
+  color: var(--primary-color);
   box-sizing: border-box;
 }
 
@@ -48,7 +52,7 @@ body {
   height: var(--screen-size);
   position: relative;
   margin: 0 auto;
-  perspective-origin: 120% -20%;
+  perspective-origin: 150% -30%;
   perspective: 1000px;
 }
 
@@ -68,8 +72,10 @@ body.debug #screen {
 
 #start {
   width: var(--track-width);
-  height: 100px;
-  transform: translate3d(-50%, -100%, calc(-1 * var(--infinite-track-length)));
+  height: 300px;
+  background: url(./img/start.png) center no-repeat;
+  background-size: 100% auto;
+  background-position-y: 100%;
 }
 
 body.debug #start {
@@ -91,7 +97,7 @@ body.debug #goal {
 #road {
   width: var(--track-width);
   height: var(--infinite-track-length);
-  background: url(./img/road.png) repeat-y;
+  background: #ddd url(./img/road.png) repeat-y;
   background-size: 100% auto;
   transform: translate3d(
       -50%,
@@ -104,12 +110,6 @@ body.debug #goal {
 #road-start-line {
   width: var(--track-width);
   height: 90px;
-  background: url(./img/final-line.jpg);
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  /* transform: translate3d(-50%, -50%, calc(-1 * var(--track-length)))
-    rotateX(90deg); */
 }
 
 #road-final-line {
@@ -138,7 +138,7 @@ body.debug #goal {
 
 .tracker {
   width: var(--track-width);
-  outline: 1px solid #ddd;
+  outline: 1px solid var(--primary-color);
   overflow: hidden;
   border: 3px solid white;
 }
@@ -159,17 +159,27 @@ body.debug #goal {
   text-align: center;
 }
 
+.buttons {
+  display: flex;
+  gap: 24px;
+}
+
 button {
-  padding: 0.5rem 1rem;
-  background-color: #eadc7a;
-  border: 1px solid #999;
-  color: #23643c;
-  font-size: 16px;
-  font-weight: bold;
+  cursor: pointer;
+  width: 116px;
+  height: 47px;
+  background: url(./img/button.png) center no-repeat;
+  background-size: 100% 100%;
+  border: none;
+  outline: none;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
 }
 
 button:hover {
-  opacity: 0.8;
+  background-image: url(./img/button-hover.png);
+  padding-bottom: 0px;
+  margin-bottom: 0px;
 }
 
 #options {

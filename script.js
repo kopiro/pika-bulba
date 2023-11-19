@@ -16,7 +16,7 @@ const FPS = 1000 / 60;
 const MIN_ADVANCE = 1;
 const MAX_ADVANCE = 10;
 const X_NOISE = 1;
-const COOP_ADVANCE = 20;
+const COOP_ADVANCE = 10;
 
 // Determined at runtime
 let TRACK_LENGTH;
@@ -27,7 +27,7 @@ const game = KEYS.reduce(
   (acc, key) => {
     acc.$[key] = {
       x: config.$[key].xOffset,
-      z: 0,
+      z: config.$[key].initialZ || 0,
       frame: 0,
       $image: (() => {
         const img = new Image();
@@ -91,10 +91,8 @@ function prepareSceneAddRocks() {
 
 function prepareSceneSetLines() {
   document.querySelector(
-    "#road-start-line"
-  ).style.transform = `translate3d(-50%, -50%, ${
-    -1 * TRACK_LENGTH
-  }px) rotateX(90deg)`;
+    "#start"
+  ).style.transform = `translate3d(-50%, -100%, ${-1 * TRACK_LENGTH}px)`;
 }
 
 async function prepareScene() {
@@ -116,7 +114,7 @@ function renderPlayer(key) {
     TRACK_WIDTH / 2 - IMG_SIZE,
     Math.max(-(TRACK_WIDTH / 2) + IMG_SIZE, game.$[key].x)
   );
-  game.$[key].z = Math.max(0, Math.min(TRACK_LENGTH, game.$[key].z));
+  game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z);
 
   const { x, z, frame } = game.$[key];
   const ratio = z / TRACK_LENGTH;
@@ -138,14 +136,14 @@ function renderPlayer(key) {
     game.$[key].$image.src = nextFrame;
 
     game.$[key].$progress.firstChild.textContent = `${Math.floor(z)}m`;
-    game.$[key].$progress.firstChild.style.transform = `translateX(-${
-      (1 - ratio) * 100
-    }%)`;
   }
 
   const cssZ = -TRACK_LENGTH + z;
 
   game.$[key].$image.style.transform = `translate3d(${x}px, 0, ${cssZ}px)`;
+  game.$[key].$progress.firstChild.style.transform = `translateX(-${
+    (1 - ratio) * 100
+  }%)`;
 }
 
 let then = null;
