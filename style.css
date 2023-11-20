@@ -88,6 +88,10 @@ body.debug #goal {
   border: 1px solid black;
 }
 
+#copy {
+  color: black;
+}
+
 #road {
   width: var(--track-width);
   height: var(--infinite-track-length);
