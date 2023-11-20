@@ -10,6 +10,8 @@ const $resetButton = document.querySelector("#reset-button");
 const $images = {};
 const $progress = {};
 
+const $rocks = [];
+
 // Static values from CSS
 const TRACK_WIDTH = getCSSVar("--track-width");
 const IMG_SIZE = getCSSVar("--img-size");
@@ -21,6 +23,7 @@ const MIN_ADVANCE = 1;
 const MAX_ADVANCE = 10;
 const X_NOISE = 1;
 const COOP_ADVANCE = 10;
+const GOAL_Z_OFFSET = 100;
 
 // Determined at runtime
 let TRACK_LENGTH;
@@ -37,7 +40,7 @@ function loadGame() {
       acc.$[key] = {
         x: config.$[key].xOffset,
         y: 0,
-        z: config.$[key].initialZ || 0,
+        z: TRACK_LENGTH,
         frame: 0,
       };
       return acc;
@@ -60,16 +63,17 @@ function getAdvanceBy(key) {
 }
 
 function prepareSceneAddBushes() {
-  // Put the bushes in the scene
   const BUSH_OFFSET = 16;
-  const BUSH_DENSITY = 20;
-  [-TRACK_WIDTH + BUSH_OFFSET, TRACK_WIDTH - BUSH_OFFSET].forEach((x) => {
+  const BUSH_DENSITY = 30;
+  [-TRACK_WIDTH + BUSH_OFFSET, TRACK_WIDTH - BUSH_OFFSET].forEach((_x) => {
     for (let i = 0; i < BUSH_DENSITY; i++) {
       const $bush = document.createElement("div");
       $bush.className = "bush bush-style";
-      $bush.style.transform = `translate3d(${x / 2}px, 0, ${
-        -1 * Math.random() * (INFINITE_TRACK_LENGTH - BUSH_OFFSET * 2)
-      }px)`;
+      const x = _x / 2;
+      const y = 0;
+      const z =
+        GOAL_Z_OFFSET + Math.random() * (INFINITE_TRACK_LENGTH - GOAL_Z_OFFSET);
+      applyCoordinates({ x, y, z }, $bush);
       $scene.appendChild($bush);
     }
   });
@@ -77,19 +81,30 @@ function prepareSceneAddBushes() {
 
 function prepareSceneAddRocks() {
   // Put the bushes in the scene
-  const GOAL_OFFSET = 100;
   const maxX = TRACK_WIDTH / 2 - 16;
   const ROCK_DENSITY = 20;
   for (let i = 0; i < ROCK_DENSITY; i++) {
     const $rock = document.createElement("div");
     $rock.className = "bush rock-style";
-    $rock.style.transform = `translate3d(${
-      -maxX + Math.random() * (2 * maxX)
-    }px, 0, ${
-      -1 * (GOAL_OFFSET + Math.random() * (INFINITE_TRACK_LENGTH - GOAL_OFFSET))
-    }px)`;
+    const x = maxX - Math.random() * maxX * 2;
+    const y = 0;
+    const z =
+      GOAL_Z_OFFSET + Math.random() * (INFINITE_TRACK_LENGTH - GOAL_Z_OFFSET);
+    $rocks.push({ x, y, z });
+    applyCoordinates({ x, y, z }, $rock);
     $scene.appendChild($rock);
   }
+}
+
+function checkForRockCollision(key, treshold) {
+  const { x, y, z } = game.$[key];
+  const collision = $rocks.find(
+    (rock) =>
+      Math.abs(rock.x - x) < treshold &&
+      Math.abs(rock.y - y) < treshold &&
+      Math.abs(rock.z - z) < treshold
+  );
+  return collision;
 }
 
 function prepareSceneSetLines() {
@@ -122,20 +137,30 @@ async function prepareScene() {
     })();
     $trackers.appendChild($progress[key]);
   });
-
-  await Promise.all(KEYS.map((key) => preloadImages(key)));
 }
 
-function renderPlayer(key) {
-  // Limit the x position to the cube size
+function clampPlayer(key) {
   game.$[key].x = Math.min(
     TRACK_WIDTH / 2 - IMG_SIZE,
     Math.max(-(TRACK_WIDTH / 2) + IMG_SIZE, game.$[key].x)
   );
-  game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z);
+  game.$[key].y = Math.max(0, game.$[key].y);
+  game.$[key].z = Math.max(0, game.$[key].z);
+}
+
+function applyCoordinates(coords, $element) {
+  const { x, y, z } = coords;
+  const cssX = x;
+  const cssY = -y;
+  const cssZ = -z;
+  $element.style.transform = `translate3d(${cssX}px, ${cssY}px, ${cssZ}px)`;
+}
+
+function renderPlayer(key) {
+  clampPlayer(key);
 
   const { x, y, z, frame } = game.$[key];
-  const ratio = z / TRACK_LENGTH;
+  const ratio = (TRACK_LENGTH - z) / TRACK_LENGTH;
 
   if (game.winner === key) {
     const winGif = `./${key}/win.gif`;
@@ -156,12 +181,12 @@ function renderPlayer(key) {
       $images[key].src = nextFrame;
     }
 
-    $progress[key].firstChild.textContent = `${Math.floor(z)}m`;
+    $progress[key].firstChild.textContent = `${Math.floor(
+      ratio * TRACK_LENGTH
+    )}m`;
   }
 
-  const cssZ = -TRACK_LENGTH + z;
-
-  $images[key].style.transform = `translate3d(${x}px, ${y}px, ${cssZ}px)`;
+  applyCoordinates(game.$[key], $images[key]);
   $progress[key].firstChild.style.transform = `translateX(-${
     (1 - ratio) * 100
   }%)`;
@@ -173,7 +198,6 @@ function startRenderingLoop() {
   requestAnimationFrame(startRenderingLoop);
 
   let now = Date.now();
-
   let deltaTime = now - then;
 
   if (deltaTime <= FPS) return;
@@ -195,30 +219,61 @@ function flyUpEquation(t) {
   return 130 * t + 5 * Math.sin(20 * t);
 }
 
+function jumpEquation(t) {
+  return 30 * Math.sin(10 * t);
+}
+
 function advancePlayer(key, now) {
   if (game.winner === key) {
     const timeSinceWin = (now - game.$[key].wonAt) / 1000;
-    game.$[key].y = -flyUpEquation(timeSinceWin);
-  } else if (game.loser === key) {
-  } else {
-    // Move player
-    if (game.mode === "auto") {
-      const advanceBy = getAdvanceBy(key);
-      game.$[key].z = Math.min(TRACK_LENGTH, game.$[key].z + advanceBy);
+    game.$[key].y = flyUpEquation(timeSinceWin);
+    return;
+  }
+
+  if (game.loser === key) {
+    return;
+  }
+
+  // Move player
+  if (game.mode === "auto") {
+    // Check for imminent collision
+    if (!game.$[key].jumpingStartTime) {
+      const collision = checkForRockCollision(key, IMG_SIZE * 0.8);
+      if (collision) {
+        console.log("collision :>> ", collision);
+        game.$[key].jumpingStartTime = now;
+      }
     }
 
+    // Add noise
     const xNoise = -X_NOISE + Math.random() * X_NOISE * 2;
     game.$[key].x += xNoise;
 
-    // Advance next frame of the GIF
-    game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
-
-    if (game.$[key].z >= TRACK_LENGTH) {
-      if (game.winner === null) {
-        declareWinner(key);
-      } else if (game.winner !== key) {
-        declareLoser(key);
+    // Check if player is jumping
+    if (game.$[key].jumpingStartTime) {
+      const timeSinceJump = (now - game.$[key].jumpingStartTime) / 1000;
+      console.log("timeSinceJump :>> ", timeSinceJump);
+      game.$[key].y = jumpEquation(timeSinceJump);
+      console.log("game.$[key].y :>> ", game.$[key].y);
+      if (game.$[key].y < 0) {
+        game.$[key].y = 0;
+        game.$[key].jumpingStartTime = null;
       }
+    }
+
+    // Advance Z
+    const advanceBy = getAdvanceBy(key);
+    game.$[key].z = Math.max(0, game.$[key].z - advanceBy);
+  }
+
+  // Advance next frame of the GIF
+  game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
+
+  if (game.$[key].z <= 0) {
+    if (game.winner === null) {
+      declareWinner(key);
+    } else if (game.winner !== key) {
+      declareLoser(key);
     }
   }
 }
@@ -315,9 +370,15 @@ function endGame() {
   document.body.classList.add("game-ended");
 }
 
+function preload() {
+  return Promise.all(KEYS.map((key) => preloadImages(key)));
+}
+
 async function main() {
   loadGame();
-  await prepareScene();
+
+  await preload();
+  prepareScene();
 
   document.body.classList.add("game-ready");
 
@@ -337,7 +398,7 @@ async function main() {
   });
 
   document.querySelector("#opt-track-length").addEventListener("input", () => {
-    readOptions();
+    loadGame();
     prepareSceneSetLines();
   });
 
