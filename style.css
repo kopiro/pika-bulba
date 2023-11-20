@@ -83,12 +83,6 @@ body.debug #start {
   background: hsla(120, 100%, 50%, 0.2);
 }
 
-#goal {
-  width: var(--track-width);
-  height: 300px;
-  transform: translate3d(-50%, -100%, 0);
-}
-
 body.debug #goal {
   background: hsla(0, 100%, 50%, 0.2);
   border: 1px solid black;
@@ -104,12 +98,7 @@ body.debug #goal {
       -50%,
       calc(-1 * var(--infinite-track-length) / 2)
     )
-    rotateX(90deg);
-}
-
-#road-start-line {
-  width: var(--track-width);
-  height: 90px;
+    rotateX(90.000000000001deg);
 }
 
 #road-final-line {
@@ -119,7 +108,8 @@ body.debug #goal {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
-  transform: translate3d(-50%, -50%, -90px) rotateX(90deg);
+
+  transform: translate3d(-50%, -50%, -90px) rotateX(90.000000000001deg);
 }
 
 .img {
