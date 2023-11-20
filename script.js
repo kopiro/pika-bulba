@@ -5,6 +5,10 @@ const $startAutorace = document.querySelector("#start-autorace");
 const $startCoop = document.querySelector("#start-coop");
 const $scene = document.querySelector("#scene");
 const $trackers = document.querySelector("#trackers");
+const $resetButton = document.querySelector("#reset-button");
+
+const $images = {};
+const $progress = {};
 
 // Static values from CSS
 const TRACK_WIDTH = getCSSVar("--track-width");
@@ -23,38 +27,33 @@ let TRACK_LENGTH;
 
 const KEYS = Object.keys(config.$);
 
-const game = KEYS.reduce(
-  (acc, key) => {
-    acc.$[key] = {
-      x: config.$[key].xOffset,
-      y: 0,
-      z: config.$[key].initialZ || 0,
-      frame: 0,
-      $image: (() => {
-        const img = new Image();
-        img.className = "img";
-        return img;
-      })(),
-      $progress: (() => {
-        const $tracker = document.createElement("div");
-        $tracker.className = `tracker`;
-        const $subtracker = document.createElement("span");
-        $subtracker.className = "subtracker";
-        $subtracker.style.backgroundColor = config.$[key].color;
-        $tracker.appendChild($subtracker);
-        return $tracker;
-      })(),
-    };
-    return acc;
-  },
-  {
-    started: false,
-    mode: null,
-    winner: null,
-    loser: null,
-    $: {},
-  }
-);
+let game = null;
+
+function loadGame() {
+  readOptions();
+
+  game = KEYS.reduce(
+    (acc, key) => {
+      acc.$[key] = {
+        x: config.$[key].xOffset,
+        y: 0,
+        z: config.$[key].initialZ || 0,
+        frame: 0,
+      };
+      return acc;
+    },
+    {
+      started: false,
+      mode: null,
+      winner: null,
+      loser: null,
+      $: {},
+    }
+  );
+
+  document.body.classList.remove("game-ended");
+  document.body.classList.remove("game-started");
+}
 
 function getAdvanceBy(key) {
   return MIN_ADVANCE + Math.floor(Math.random() * MAX_ADVANCE);
@@ -105,8 +104,23 @@ async function prepareScene() {
   prepareSceneAddRocks();
 
   KEYS.forEach((key) => {
-    $scene.appendChild(game.$[key].$image);
-    $trackers.appendChild(game.$[key].$progress);
+    $images[key] = (() => {
+      const img = new Image();
+      img.className = "img";
+      return img;
+    })();
+    $scene.appendChild($images[key]);
+
+    $progress[key] = (() => {
+      const $tracker = document.createElement("div");
+      $tracker.className = `tracker`;
+      const $subtracker = document.createElement("span");
+      $subtracker.className = "subtracker";
+      $subtracker.style.backgroundColor = config.$[key].color;
+      $tracker.appendChild($subtracker);
+      return $tracker;
+    })();
+    $trackers.appendChild($progress[key]);
   });
 
   await Promise.all(KEYS.map((key) => preloadImages(key)));
@@ -125,30 +139,30 @@ function renderPlayer(key) {
 
   if (game.winner === key) {
     const winGif = `./${key}/win.gif`;
-    if (game.$[key].$image.dataset.src !== winGif) {
-      game.$[key].$image.dataset.src = winGif;
-      game.$[key].$image.src = winGif;
+    if ($images[key].dataset.src !== winGif) {
+      $images[key].dataset.src = winGif;
+      $images[key].src = winGif;
     }
   } else if (game.loser === key) {
     const lostGif = `./${key}/lost.gif`;
-    if (game.$[key].$image.dataset.src !== lostGif) {
-      game.$[key].$image.dataset.src = lostGif;
-      game.$[key].$image.src = lostGif;
+    if ($images[key].dataset.src !== lostGif) {
+      $images[key].dataset.src = lostGif;
+      $images[key].src = lostGif;
     }
   } else {
     const nextFrame = `./${key}/${frame + 1}.png`;
-    if (game.$[key].$image.dataset.src !== nextFrame) {
-      game.$[key].$image.dataset.src = nextFrame;
-      game.$[key].$image.src = nextFrame;
+    if ($images[key].dataset.src !== nextFrame) {
+      $images[key].dataset.src = nextFrame;
+      $images[key].src = nextFrame;
     }
 
-    game.$[key].$progress.firstChild.textContent = `${Math.floor(z)}m`;
+    $progress[key].firstChild.textContent = `${Math.floor(z)}m`;
   }
 
   const cssZ = -TRACK_LENGTH + z;
 
-  game.$[key].$image.style.transform = `translate3d(${x}px, ${y}px, ${cssZ}px)`;
-  game.$[key].$progress.firstChild.style.transform = `translateX(-${
+  $images[key].style.transform = `translate3d(${x}px, ${y}px, ${cssZ}px)`;
+  $progress[key].firstChild.style.transform = `translateX(-${
     (1 - ratio) * 100
   }%)`;
 }
@@ -215,16 +229,18 @@ function declareWinner(key) {
   game.winner = key;
   game.$[key].wonAt = Date.now();
 
-  game.$[key].$progress.firstChild.textContent = "finished";
+  $progress[key].firstChild.textContent = "finished";
   $winner.textContent = `${key} won!`;
   $winner.style.color = config.$[key].color;
+
+  endGame();
 }
 
 function declareLoser(key) {
   if (game.loser) return;
 
   game.loser = key;
-  game.$[key].$progress.firstChild.textContent = "finished";
+  $progress[key].firstChild.textContent = "finished";
 }
 
 function getCSSVar(key) {
@@ -290,15 +306,17 @@ function readOptions() {
 
 function startGame() {
   if (game.started) return;
-
   document.body.classList.add("game-started");
-
-  readOptions();
   game.started = true;
 }
 
+function endGame() {
+  if (!game.started) return;
+  document.body.classList.add("game-ended");
+}
+
 async function main() {
-  readOptions();
+  loadGame();
   await prepareScene();
 
   document.body.classList.add("game-ready");
@@ -312,6 +330,10 @@ async function main() {
   $startCoop.addEventListener("click", () => {
     game.mode = "coop";
     startGame();
+  });
+
+  $resetButton.addEventListener("click", () => {
+    loadGame();
   });
 
   document.querySelector("#opt-track-length").addEventListener("input", () => {

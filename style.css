@@ -52,13 +52,13 @@ body {
   height: var(--screen-size);
   position: relative;
   margin: 0 auto;
-  perspective-origin: 150% -30%;
+  perspective-origin: 100% -20%;
   perspective: 1000px;
 }
 
 #scene {
   position: absolute;
-  transform: translate3d(30px, 430px, -400px);
+  transform: translate3d(85px, 450px, -400px);
   transform-style: preserve-3d;
 }
 
@@ -157,6 +157,11 @@ body.debug #goal {
 
 #winner {
   text-align: center;
+  display: none;
+}
+
+body.game-ended #winner {
+  display: flex;
 }
 
 .buttons {
@@ -188,12 +193,21 @@ button:hover {
   flex-direction: column;
 }
 
+#reset {
+  display: none;
+  flex-direction: column;
+}
+
 body.game-ready #options {
   display: flex;
 }
 
 body.game-started #options {
   display: none;
+}
+
+body.game-ended #reset {
+  display: flex;
 }
 
 .bush {
