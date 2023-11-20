@@ -1,5 +1,5 @@
 const config = {
-  $: {
+  players: {
     pikacute: {
       xOffset: -50,
       maxFrames: 24,

@@ -6,93 +6,108 @@ const $startCoop = document.querySelector("#start-coop");
 const $scene = document.querySelector("#scene");
 const $trackers = document.querySelector("#trackers");
 const $resetButton = document.querySelector("#reset-button");
+const $start = document.querySelector("#start");
 
-const $images = {};
-const $progress = {};
+const playerKeys = Object.keys(config.players);
 
-const $rocks = [];
+const game = {
+  $: { rocks: [], bushes: [], players: {}, progress: {} },
+};
 
 // Static values from CSS
-const TRACK_WIDTH = getCSSVar("--track-width");
-const IMG_SIZE = getCSSVar("--img-size");
-const INFINITE_TRACK_LENGTH = getCSSVar("--infinite-track-length");
+const kTrackWidth = getCSSVar("--track-width");
+const kImgSize = getCSSVar("--img-size");
+const kInfiniteTrackLength = getCSSVar("--infinite-track-length");
 
 // Static values
-const FPS = 1000 / 60;
-const MIN_ADVANCE = 1;
-const MAX_ADVANCE = 10;
-const X_NOISE = 1;
-const COOP_ADVANCE = 10;
-const GOAL_Z_OFFSET = 100;
-
-// Determined at runtime
-let TRACK_LENGTH;
-
-const KEYS = Object.keys(config.$);
-
-let game = null;
+const kFPS = 1000 / 60;
+const kAutoMinAdvance = 1;
+const kAutoMaxAdvance = 10;
+const kXNoiseMax = 1;
+const kCoopAdvance = 10;
+const kGoalZOffset = 100;
 
 function loadGame() {
   readOptions();
 
-  game = KEYS.reduce(
-    (acc, key) => {
-      acc.$[key] = {
-        x: config.$[key].xOffset,
-        y: 0,
-        z: TRACK_LENGTH,
-        frame: 0,
-      };
-      return acc;
-    },
-    {
-      started: false,
-      mode: null,
-      winner: null,
-      loser: null,
-      $: {},
-    }
-  );
+  game.started = false;
+  game.mode = null;
+  game.winner = null;
+  game.loser = null;
+
+  game.$.players = playerKeys.reduce((acc, key) => {
+    acc[key] = {
+      ...acc[key],
+      key: key,
+      config: config.players[key],
+      x: config.players[key].xOffset,
+      y: 0,
+      z: game.trackLength,
+      frame: 0,
+    };
+    return acc;
+  }, game.$.players || {});
 
   document.body.classList.remove("game-ended");
   document.body.classList.remove("game-started");
+
+  $start.style.transform = `translate3d(-50%, -100%, ${
+    -1 * game.trackLength
+  }px)`;
 }
 
-function getAdvanceBy(key) {
-  return MIN_ADVANCE + Math.floor(Math.random() * MAX_ADVANCE);
+function getAdvanceBy(p) {
+  return kAutoMinAdvance + Math.floor(Math.random() * kAutoMaxAdvance);
 }
 
 function prepareSceneAddBushes() {
   const BUSH_OFFSET = 16;
   const BUSH_DENSITY = 30;
-  [-TRACK_WIDTH + BUSH_OFFSET, TRACK_WIDTH - BUSH_OFFSET].forEach((_x) => {
+  [-kTrackWidth + BUSH_OFFSET, kTrackWidth - BUSH_OFFSET].forEach((_x) => {
     for (let i = 0; i < BUSH_DENSITY; i++) {
-      const $bush = document.createElement("div");
-      $bush.className = "bush bush-style";
       const x = _x / 2;
       const y = 0;
       const z =
-        GOAL_Z_OFFSET + Math.random() * (INFINITE_TRACK_LENGTH - GOAL_Z_OFFSET);
-      applyCoordinates({ x, y, z }, $bush);
-      $scene.appendChild($bush);
+        kGoalZOffset + Math.random() * (kInfiniteTrackLength - kGoalZOffset);
+      const bush = {
+        x,
+        y,
+        z,
+        $: (() => {
+          const $ = document.createElement("div");
+          $.className = "bush bush-style";
+          return $;
+        })(),
+      };
+      game.$.bushes.push(bush);
+      applyCoordinates(bush);
+      $scene.appendChild(bush.$);
     }
   });
 }
 
 function prepareSceneAddRocks() {
   // Put the bushes in the scene
-  const maxX = TRACK_WIDTH / 2 - 16;
+  const maxX = kTrackWidth / 2 - 16;
   const ROCK_DENSITY = 20;
   for (let i = 0; i < ROCK_DENSITY; i++) {
-    const $rock = document.createElement("div");
-    $rock.className = "bush rock-style";
     const x = maxX - Math.random() * maxX * 2;
     const y = 0;
     const z =
-      GOAL_Z_OFFSET + Math.random() * (INFINITE_TRACK_LENGTH - GOAL_Z_OFFSET);
-    $rocks.push({ x, y, z });
-    applyCoordinates({ x, y, z }, $rock);
-    $scene.appendChild($rock);
+      kGoalZOffset + Math.random() * (kInfiniteTrackLength - kGoalZOffset);
+    const rock = {
+      x,
+      y,
+      z,
+      $: (() => {
+        const $ = document.createElement("div");
+        $.className = "bush rock-style";
+        return $;
+      })(),
+    };
+    game.$.rocks.push(rock);
+    applyCoordinates(rock);
+    $scene.appendChild(rock.$);
   }
 }
 
@@ -100,7 +115,7 @@ const __rockCollisionCache = {};
 function checkForRockCollision({ x, y, z }, treshold) {
   __rockCollisionCache[treshold] =
     __rockCollisionCache[treshold] ||
-    $rocks.reduce((acc, rock) => {
+    game.$.rocks.reduce((acc, rock) => {
       const quantizedX = Math.floor(rock.x / treshold);
       const quantizedY = Math.floor(rock.y / treshold);
       const quantizedZ = Math.floor(rock.z / (treshold * 2));
@@ -118,87 +133,76 @@ function checkForRockCollision({ x, y, z }, treshold) {
   return key in __rockCollisionCache[treshold];
 }
 
-function prepareSceneSetLines() {
-  document.querySelector(
-    "#start"
-  ).style.transform = `translate3d(-50%, -100%, ${-1 * TRACK_LENGTH}px)`;
-}
-
 async function prepareScene() {
-  prepareSceneSetLines();
   prepareSceneAddBushes();
   prepareSceneAddRocks();
 
-  KEYS.forEach((key) => {
-    $images[key] = (() => {
+  Object.keys(game.$.players).forEach((key) => {
+    const p = game.$.players[key];
+
+    p.$ = (() => {
       const img = new Image();
       img.className = "img";
       return img;
     })();
-    $scene.appendChild($images[key]);
+    $scene.appendChild(p.$);
 
-    $progress[key] = (() => {
+    game.$.progress[p.key] = (() => {
       const $tracker = document.createElement("div");
       $tracker.className = `tracker`;
       const $subtracker = document.createElement("span");
       $subtracker.className = "subtracker";
-      $subtracker.style.backgroundColor = config.$[key].color;
+      $subtracker.style.backgroundColor = p.config.color;
       $tracker.appendChild($subtracker);
       return $tracker;
     })();
-    $trackers.appendChild($progress[key]);
+    $trackers.appendChild(game.$.progress[p.key]);
   });
+
+  console.log("game.$.players :>> ", game.$.players);
 }
 
-function clampPlayer(key) {
-  game.$[key].x = Math.min(
-    TRACK_WIDTH / 2 - IMG_SIZE,
-    Math.max(-(TRACK_WIDTH / 2) + IMG_SIZE, game.$[key].x)
+function clampPlayer(p) {
+  p.x = Math.min(
+    kTrackWidth / 2 - kImgSize,
+    Math.max(-(kTrackWidth / 2) + kImgSize, p.x)
   );
-  game.$[key].y = Math.max(0, game.$[key].y);
-  game.$[key].z = Math.max(0, game.$[key].z);
+  p.y = Math.max(0, p.y);
+  p.z = Math.max(0, p.z);
 }
 
-function applyCoordinates(coords, $element) {
-  const { x, y, z } = coords;
-  const cssX = x;
-  const cssY = -y;
-  const cssZ = -z;
-  $element.style.transform = `translate3d(${cssX}px, ${cssY}px, ${cssZ}px)`;
+function applyCoordinates(p) {
+  const cssX = p.x;
+  const cssY = -p.y;
+  const cssZ = -p.z;
+  p.$.style.transform = `translate3d(${cssX}px, ${cssY}px, ${cssZ}px)`;
 }
 
-function renderPlayer(key) {
-  clampPlayer(key);
+function applySrc(obj, src) {
+  if (obj.src !== src) {
+    obj.src = src;
+    obj.$.src = obj.src;
+  }
+}
 
-  const { x, y, z, frame } = game.$[key];
-  const ratio = (TRACK_LENGTH - z) / TRACK_LENGTH;
+function renderPlayer(p, now) {
+  clampPlayer(p);
+  applyCoordinates(p);
 
-  if (game.winner === key) {
-    const winGif = `./${key}/win.gif`;
-    if ($images[key].dataset.src !== winGif) {
-      $images[key].dataset.src = winGif;
-      $images[key].src = winGif;
-    }
-  } else if (game.loser === key) {
-    const lostGif = `./${key}/lost.gif`;
-    if ($images[key].dataset.src !== lostGif) {
-      $images[key].dataset.src = lostGif;
-      $images[key].src = lostGif;
-    }
+  const ratio = (game.trackLength - p.z) / game.trackLength;
+
+  if (game.winner === p) {
+    applySrc(p, `./${p.key}/win.gif`);
+  } else if (game.loser === p) {
+    applySrc(p, `./${p.key}/lost.gif`);
   } else {
-    const nextFrame = `./${key}/${frame + 1}.png`;
-    if ($images[key].dataset.src !== nextFrame) {
-      $images[key].dataset.src = nextFrame;
-      $images[key].src = nextFrame;
-    }
-
-    $progress[key].firstChild.textContent = `${Math.floor(
-      ratio * TRACK_LENGTH
+    applySrc(p, `./${p.key}/${p.frame + 1}.png`);
+    game.$.progress[p.key].firstChild.textContent = `${Math.floor(
+      ratio * game.trackLength
     )}m`;
   }
 
-  applyCoordinates(game.$[key], $images[key]);
-  $progress[key].firstChild.style.transform = `translateX(-${
+  game.$.progress[p.key].firstChild.style.transform = `translateX(-${
     (1 - ratio) * 100
   }%)`;
 }
@@ -211,22 +215,21 @@ function startRenderingLoop() {
   let now = Date.now();
   let deltaTime = now - then;
 
-  if (deltaTime <= FPS) return;
-  then = now - (deltaTime % FPS);
+  if (deltaTime <= kFPS) return;
+  then = now - (deltaTime % kFPS);
 
   if (game.started) {
-    KEYS.forEach((key) => {
-      advancePlayer(key, now);
+    Object.keys(game.$.players).forEach((key) => {
+      movePlayer(game.$.players[key], now);
     });
   }
 
-  KEYS.forEach((key) => {
-    renderPlayer(key);
+  Object.keys(game.$.players).forEach((key) => {
+    renderPlayer(game.$.players[key], now);
   });
 }
 
 function flyUpEquation(t) {
-  // Map t in radians
   return 130 * t + 5 * Math.sin(20 * t);
 }
 
@@ -234,78 +237,80 @@ function jumpEquation(t) {
   return 30 * Math.sin(10 * t);
 }
 
-function advancePlayer(key, now) {
-  if (game.winner === key) {
-    const timeSinceWin = (now - game.$[key].wonAt) / 1000;
-    game.$[key].y = flyUpEquation(timeSinceWin);
+function movePlayer(p, now) {
+  if (game.winner === p) {
+    const timeSinceWin = (now - p.wonAt) / 1000;
+    p.x += 0.5;
+    p.y = flyUpEquation(timeSinceWin);
     return;
   }
 
-  if (game.loser === key) {
+  if (game.loser === p) {
     return;
   }
 
   // Move player
   if (game.mode === "auto") {
     // Check for imminent collision
-    if (!game.$[key].jumpingStartTime) {
-      const collision = checkForRockCollision(game.$[key], IMG_SIZE);
+    if (!p.jumpingStartTime) {
+      const collision = checkForRockCollision(p, kImgSize);
       if (collision) {
         console.log("collision :>> ", collision);
-        game.$[key].jumpingStartTime = now;
+        p.jumpingStartTime = now;
       }
     }
 
     // Add noise
-    const xNoise = -X_NOISE + Math.random() * X_NOISE * 2;
-    game.$[key].x += xNoise;
+    const xNoise = -kXNoiseMax + Math.random() * kXNoiseMax * 2;
+    p.x += xNoise;
 
     // Check if player is jumping
-    if (game.$[key].jumpingStartTime) {
-      const timeSinceJump = (now - game.$[key].jumpingStartTime) / 1000;
-      game.$[key].y = jumpEquation(timeSinceJump);
+    if (p.jumpingStartTime) {
+      const timeSinceJump = (now - p.jumpingStartTime) / 1000;
+      p.y = jumpEquation(timeSinceJump);
 
-      if (game.$[key].y < 0) {
-        game.$[key].y = 0;
-        game.$[key].jumpingStartTime = null;
+      if (p.y < 0) {
+        p.y = 0;
+        p.jumpingStartTime = null;
       }
     }
 
     // Advance Z
-    const advanceBy = getAdvanceBy(key);
-    game.$[key].z = Math.max(0, game.$[key].z - advanceBy);
+    const advanceBy = getAdvanceBy(p.key);
+    p.z = Math.max(0, p.z - advanceBy);
   }
 
   // Advance next frame of the GIF
-  game.$[key].frame = (game.$[key].frame + 1) % config.$[key].maxFrames;
+  p.frame = (p.frame + 1) % p.config.maxFrames;
 
-  if (game.$[key].z <= 0) {
+  // Check if someone won
+  if (p.z <= 0) {
     if (game.winner === null) {
-      declareWinner(key);
-    } else if (game.winner !== key) {
-      declareLoser(key);
+      declareWinner(p);
+    } else if (game.winner !== p) {
+      declareLoser(p);
     }
   }
 }
 
-function declareWinner(key) {
+function declareWinner(p) {
   if (game.winner) return;
 
-  game.winner = key;
-  game.$[key].wonAt = Date.now();
+  game.winner = p;
+  p.wonAt = Date.now();
 
-  $progress[key].firstChild.textContent = "finished";
-  $winner.textContent = `${key} won!`;
-  $winner.style.color = config.$[key].color;
+  game.$.progress[p.key].firstChild.textContent = "finished";
+  $winner.textContent = `${p.key} won!`;
+  $winner.style.color = p.config.color;
 
   endGame();
 }
 
-function declareLoser(key) {
+function declareLoser(p) {
   if (game.loser) return;
 
-  game.loser = key;
-  $progress[key].firstChild.textContent = "finished";
+  game.loser = p;
+  game.$.progress[p.key].firstChild.textContent = "finished";
 }
 
 function getCSSVar(key) {
@@ -313,9 +318,10 @@ function getCSSVar(key) {
 }
 
 function preloadImages(key) {
+  console.log("game.$.players :>> ", game.$.players);
   return new Promise((resolve) => {
     let loaded = 0;
-    const frames = new Array(config.$[key].maxFrames - 1)
+    const frames = new Array(game.$.players[key].config.maxFrames - 1)
       .fill()
       .map((_, i) => `${i + 1}.png`);
     frames.push("win.gif");
@@ -355,8 +361,8 @@ function handleAccelerometer() {
             const y = event.accelerationIncludingGravity.y;
             const z = event.accelerationIncludingGravity.z;
 
-            KEYS.forEach((key) => {
-              game.$[key].x += x / 10;
+            playerKeys.forEach((key) => {
+              game.$.players[key].x += x / 10;
             });
           });
         }
@@ -366,7 +372,7 @@ function handleAccelerometer() {
 }
 
 function readOptions() {
-  TRACK_LENGTH = document.querySelector("#opt-track-length").value;
+  game.trackLength = document.querySelector("#opt-track-length").value;
 }
 
 function startGame() {
@@ -380,15 +386,17 @@ function endGame() {
   document.body.classList.add("game-ended");
 }
 
-function preload() {
-  return Promise.all(KEYS.map((key) => preloadImages(key)));
+function preloadResources() {
+  return Promise.all(
+    Object.keys(game.$.players).map((key) => preloadImages(key))
+  );
 }
 
 async function main() {
   loadGame();
-
-  await preload();
   prepareScene();
+
+  await preloadResources();
 
   document.body.classList.add("game-ready");
 
@@ -409,15 +417,14 @@ async function main() {
 
   document.querySelector("#opt-track-length").addEventListener("input", () => {
     loadGame();
-    prepareSceneSetLines();
   });
 
   window.addEventListener("keyup", (e) => {
     if (game.mode !== "coop") return;
 
-    KEYS.forEach((key) => {
+    playerKeys.forEach((key) => {
       if (e.key.toLowerCase() === key.substring(0, 1).toLowerCase()) {
-        game.$[key].z -= COOP_ADVANCE;
+        game.$.players[key].z -= kCoopAdvance;
       }
     });
   });

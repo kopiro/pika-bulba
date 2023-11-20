@@ -178,7 +178,6 @@ button {
 button:hover {
   background-image: url(./img/button-hover.png);
   padding-bottom: 0px;
-  margin-bottom: 0px;
 }
 
 #options {
