@@ -26,6 +26,9 @@ const kAutoMaxAdvance = 10;
 const kXNoiseMax = 1;
 const kCoopAdvance = 10;
 const kGoalZOffset = 100;
+const kRockDensity = 20;
+const kBushOffset = 16;
+const kBushDensity = 30;
 
 function loadGame() {
   readOptions();
@@ -61,10 +64,8 @@ function getAdvanceBy(p) {
 }
 
 function prepareSceneAddBushes() {
-  const BUSH_OFFSET = 16;
-  const BUSH_DENSITY = 30;
-  [-kTrackWidth + BUSH_OFFSET, kTrackWidth - BUSH_OFFSET].forEach((_x) => {
-    for (let i = 0; i < BUSH_DENSITY; i++) {
+  [-kTrackWidth + kBushOffset, kTrackWidth - kBushOffset].forEach((_x) => {
+    for (let i = 0; i < kBushDensity; i++) {
       const x = _x / 2;
       const y = 0;
       const z =
@@ -89,8 +90,7 @@ function prepareSceneAddBushes() {
 function prepareSceneAddRocks() {
   // Put the bushes in the scene
   const maxX = kTrackWidth / 2 - 16;
-  const ROCK_DENSITY = 20;
-  for (let i = 0; i < ROCK_DENSITY; i++) {
+  for (let i = 0; i < kRockDensity; i++) {
     const x = maxX - Math.random() * maxX * 2;
     const y = 0;
     const z =
