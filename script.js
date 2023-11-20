@@ -394,7 +394,7 @@ async function main() {
 
   $startAutorace.addEventListener("click", () => {
     game.mode = "auto";
-    handleAccelerometer();
+    // handleAccelerometer();
     startGame();
   });
 
