@@ -103,7 +103,7 @@ function checkForRockCollision({ x, y, z }, treshold) {
     $rocks.reduce((acc, rock) => {
       const quantizedX = Math.floor(rock.x / treshold);
       const quantizedY = Math.floor(rock.y / treshold);
-      const quantizedZ = Math.floor(rock.z / treshold);
+      const quantizedZ = Math.floor(rock.z / (treshold * 2));
       const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
       acc[key] = rock;
       return acc;
@@ -112,7 +112,7 @@ function checkForRockCollision({ x, y, z }, treshold) {
   // Check for lookup
   const quantizedX = Math.floor(x / treshold);
   const quantizedY = Math.floor(y / treshold);
-  const quantizedZ = Math.floor(z / treshold);
+  const quantizedZ = Math.floor(z / (treshold * 2));
   const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
 
   return key in __rockCollisionCache[treshold];
@@ -249,7 +249,7 @@ function advancePlayer(key, now) {
   if (game.mode === "auto") {
     // Check for imminent collision
     if (!game.$[key].jumpingStartTime) {
-      const collision = checkForRockCollision(game.$[key], IMG_SIZE * 0.8);
+      const collision = checkForRockCollision(game.$[key], IMG_SIZE);
       if (collision) {
         console.log("collision :>> ", collision);
         game.$[key].jumpingStartTime = now;
@@ -417,7 +417,7 @@ async function main() {
 
     KEYS.forEach((key) => {
       if (e.key.toLowerCase() === key.substring(0, 1).toLowerCase()) {
-        game.$[key].z += COOP_ADVANCE;
+        game.$[key].z -= COOP_ADVANCE;
       }
     });
   });
