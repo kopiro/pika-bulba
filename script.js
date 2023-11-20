@@ -89,7 +89,7 @@ function prepareSceneAddBushes() {
 
 function prepareSceneAddRocks() {
   // Put the bushes in the scene
-  const maxX = kTrackWidth / 2 - 16;
+  const maxX = kTrackWidth / 2 - kBushOffset * 2;
   for (let i = 0; i < kRockDensity; i++) {
     const x = maxX - Math.random() * maxX * 2;
     const y = 0;
@@ -281,7 +281,10 @@ function movePlayer(p, now) {
   }
 
   // Advance next frame of the GIF
-  p.frame = (p.frame + 1) % p.config.maxFrames;
+  if (p.lastZ > p.z) {
+    p.frame = (p.frame + 1) % p.config.maxFrames;
+  }
+  p.lastZ = p.z;
 
   // Check if someone won
   if (p.z <= 0) {
@@ -422,9 +425,10 @@ async function main() {
   window.addEventListener("keyup", (e) => {
     if (game.mode !== "coop") return;
 
-    playerKeys.forEach((key) => {
-      if (e.key.toLowerCase() === key.substring(0, 1).toLowerCase()) {
-        game.$.players[key].z -= kCoopAdvance;
+    Object.keys(game.$.players).forEach((key) => {
+      const p = game.$.players[key];
+      if (p.config.keystrokes.includes(e.key)) {
+        p.z -= kCoopAdvance;
       }
     });
   });
