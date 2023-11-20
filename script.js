@@ -96,15 +96,26 @@ function prepareSceneAddRocks() {
   }
 }
 
-function checkForRockCollision(key, treshold) {
-  const { x, y, z } = game.$[key];
-  const collision = $rocks.find(
-    (rock) =>
-      Math.abs(rock.x - x) < treshold &&
-      Math.abs(rock.y - y) < treshold &&
-      Math.abs(rock.z - z) < treshold
-  );
-  return collision;
+const __rockCollisionCache = {};
+function checkForRockCollision({ x, y, z }, treshold) {
+  __rockCollisionCache[treshold] =
+    __rockCollisionCache[treshold] ||
+    $rocks.reduce((acc, rock) => {
+      const quantizedX = Math.floor(rock.x / treshold);
+      const quantizedY = Math.floor(rock.y / treshold);
+      const quantizedZ = Math.floor(rock.z / treshold);
+      const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
+      acc[key] = rock;
+      return acc;
+    }, {});
+
+  // Check for lookup
+  const quantizedX = Math.floor(x / treshold);
+  const quantizedY = Math.floor(y / treshold);
+  const quantizedZ = Math.floor(z / treshold);
+  const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
+
+  return key in __rockCollisionCache[treshold];
 }
 
 function prepareSceneSetLines() {
@@ -238,7 +249,7 @@ function advancePlayer(key, now) {
   if (game.mode === "auto") {
     // Check for imminent collision
     if (!game.$[key].jumpingStartTime) {
-      const collision = checkForRockCollision(key, IMG_SIZE * 0.8);
+      const collision = checkForRockCollision(game.$[key], IMG_SIZE * 0.8);
       if (collision) {
         console.log("collision :>> ", collision);
         game.$[key].jumpingStartTime = now;
