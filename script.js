@@ -137,7 +137,10 @@ function renderPlayer(key) {
     }
   } else {
     const nextFrame = `./${key}/${frame + 1}.png`;
-    game.$[key].$image.src = nextFrame;
+    if (game.$[key].$image.dataset.src !== nextFrame) {
+      game.$[key].$image.dataset.src = nextFrame;
+      game.$[key].$image.src = nextFrame;
+    }
 
     game.$[key].$progress.firstChild.textContent = `${Math.floor(z)}m`;
   }
@@ -238,6 +241,7 @@ function preloadImages(key) {
     frames.push("lost.gif");
     frames.forEach((i) => {
       const img = new Image();
+      const src = `./${key}/${i}`;
       img.onload = () => {
         loaded++;
         if (loaded === frames.length) {
@@ -250,7 +254,7 @@ function preloadImages(key) {
           resolve();
         }
       };
-      img.src = `./${key}/${i}`;
+      img.src = src;
     });
   });
 }
