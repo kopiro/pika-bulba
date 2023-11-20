@@ -263,9 +263,8 @@ function advancePlayer(key, now) {
     // Check if player is jumping
     if (game.$[key].jumpingStartTime) {
       const timeSinceJump = (now - game.$[key].jumpingStartTime) / 1000;
-      console.log("timeSinceJump :>> ", timeSinceJump);
       game.$[key].y = jumpEquation(timeSinceJump);
-      console.log("game.$[key].y :>> ", game.$[key].y);
+
       if (game.$[key].y < 0) {
         game.$[key].y = 0;
         game.$[key].jumpingStartTime = null;
