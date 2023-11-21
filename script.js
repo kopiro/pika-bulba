@@ -20,6 +20,7 @@ const game = {
 const kTrackWidth = getCSSVar("--track-width");
 const kImgSize = getCSSVar("--img-size");
 const kInfiniteTrackLength = getCSSVar("--infinite-track-length");
+const kBushSize = getCSSVar("--bush-size");
 
 // Static values
 const kFPS = 60;
@@ -36,7 +37,6 @@ const kCoopX = 2;
 
 const kGoalZOffset = 100;
 const kRockDensity = 20;
-const kBushOffset = 16;
 const kBushDensity = 30;
 
 const kCameraOffset = 600;
@@ -79,7 +79,7 @@ function getAdvanceBy(p) {
 }
 
 function prepareSceneAddBushes() {
-  [-kTrackWidth + kBushOffset, kTrackWidth - kBushOffset].forEach((_x) => {
+  [-kTrackWidth + kBushSize, kTrackWidth - kBushSize].forEach((_x) => {
     for (let i = 0; i < kBushDensity; i++) {
       const x = _x / 2;
       const y = 0;
@@ -103,7 +103,7 @@ function prepareSceneAddBushes() {
 
 function prepareSceneAddRocks() {
   // Put the bushes in the scene
-  const maxX = kBushOffset + kTrackWidth / 2 - kBushOffset * 2;
+  const maxX = kBushSize + kTrackWidth / 2 - kBushSize * 2;
   for (let i = 0; i < kRockDensity; i++) {
     const x = maxX - Math.random() * maxX * 2;
     const y = 0;
@@ -127,26 +127,54 @@ function prepareSceneAddRocks() {
   }
 }
 
+function quantizeCoords({ x, y, z }, tresholds) {
+  const c = {
+    qx: Math.floor(x / tresholds.x),
+    qy: Math.floor(y, tresholds.y),
+    qz: Math.floor(z / tresholds.z),
+  };
+  return { ...c, key: `${c.qx}-${c.qy}-${c.qz}` };
+}
+
 const __rockCollisionCache = {};
-function checkForRockCollision({ x, y, z }, treshold) {
-  __rockCollisionCache[treshold] =
-    __rockCollisionCache[treshold] ||
+function checkForRockCollision(p, tresholds) {
+  const strThresholds = JSON.stringify(tresholds);
+
+  __rockCollisionCache[strThresholds] =
+    __rockCollisionCache[strThresholds] ||
     game.$.rocks.reduce((acc, rock) => {
-      const quantizedX = Math.floor(rock.x / treshold);
-      const quantizedY = Math.floor(rock.y);
-      const quantizedZ = Math.floor(rock.z / treshold);
-      const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
-      acc[key] = rock;
+      const { qx, qy, qz, key } = quantizeCoords(rock, tresholds);
+      acc[key] = { qx, qy, qz };
       return acc;
     }, {});
+  const pZPerspective = p.z - kImgSize;
 
-  // Check for lookup
-  const quantizedX = Math.floor(x / treshold);
-  const quantizedY = Math.floor(y);
-  const quantizedZ = Math.floor(z / treshold);
-  const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
-
-  return key in __rockCollisionCache[treshold];
+  const { key: keyLeft } = quantizeCoords(
+    { x: p.x - kImgSize / 2, y: p.y, z: pZPerspective },
+    tresholds
+  );
+  const { key: keyCenter } = quantizeCoords(
+    { x: p.x, y: p.y, z: pZPerspective },
+    tresholds
+  );
+  const { key: keyRight } = quantizeCoords(
+    { x: p.x + kImgSize / 2 - 1, y: p.y, z: pZPerspective },
+    tresholds
+  );
+  const collided =
+    keyLeft in __rockCollisionCache[strThresholds] ||
+    keyRight in __rockCollisionCache[strThresholds] ||
+    keyCenter in __rockCollisionCache[strThresholds];
+  if (collided) {
+    console.log(
+      "collided :>> ",
+      p,
+      __rockCollisionCache[strThresholds][keyLeft],
+      __rockCollisionCache[strThresholds][keyRight],
+      __rockCollisionCache[strThresholds][keyCenter]
+    );
+  }
+  return collided;
 }
 
 async function prepareScene() {
@@ -305,7 +333,12 @@ function movePlayer(p) {
   if (game.mode === "auto") {
     // Check for imminent collision
     if (!p.jumpingT) {
-      const collision = checkForRockCollision(p, kImgSize);
+      // Double the bush size to make it easier to jump
+      const collision = checkForRockCollision(p, {
+        x: kBushSize,
+        y: 0,
+        z: kBushSize,
+      });
       if (collision) {
         p.jumpingT = now;
       }
@@ -321,8 +354,13 @@ function movePlayer(p) {
   } else if (game.mode === "coop") {
     p.coopValue = Math.max(0, p.coopValue - kCoopDecay);
 
-    const collision = checkForRockCollision(p, kImgSize);
+    const collision = checkForRockCollision(p, {
+      x: kBushSize,
+      y: 0,
+      z: kBushSize,
+    });
     if (collision) {
+      console.log("collision :>> ", collision);
       // Do nothing, do not advance
     } else {
       p.z -= p.coopValue;
@@ -500,6 +538,9 @@ async function main() {
             break;
           case "right":
             p.x += kCoopX;
+            break;
+          case "back":
+            p.z += 10;
             break;
         }
       });

@@ -9,6 +9,7 @@ const config = {
         " ": "jump",
         a: "left",
         d: "right",
+        w: "back",
       },
     },
     bulbasuck: {
@@ -20,6 +21,7 @@ const config = {
         " ": "jump",
         ArrowLeft: "left",
         ArrowRight: "right",
+        ArrowUp: "back",
       },
     },
   },

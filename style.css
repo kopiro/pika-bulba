@@ -9,6 +9,7 @@ html {
   --infinite-track-length: 5000px;
   --infinite-track-offset: 400px;
   --img-size: 40px;
+  --bush-size: 20px;
   --primary-color: #23643c;
 }
 
@@ -128,8 +129,8 @@ body.debug #goal {
 .img {
   width: var(--img-size);
   height: var(--img-size);
-  margin-left: -20px;
-  margin-top: -40px;
+  margin-left: -50%;
+  margin-top: calc(-1 * var(--img-size));
 }
 
 #trackers {
@@ -211,8 +212,8 @@ body.game-ended #reset {
 .bush {
   width: 20px;
   height: 20px;
-  margin-top: -20px;
-  margin-left: -10px;
+  margin-top: calc(-1 * var(--bush-size));
+  margin-left: -50%;
 }
 
 .bush.bush-style {
