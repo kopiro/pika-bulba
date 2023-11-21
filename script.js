@@ -38,6 +38,8 @@ const kRockDensity = 20;
 const kBushOffset = 16;
 const kBushDensity = 30;
 
+const kCameraOffset = 800;
+
 function loadGame() {
   readOptions();
 
@@ -169,8 +171,6 @@ async function prepareScene() {
     })();
     $trackers.appendChild(game.$.progress[p.key]);
   });
-
-  console.log("game.$.players :>> ", game.$.players);
 }
 
 function clampPlayer(p) {
@@ -189,6 +189,13 @@ function applyCoordinates(p) {
   const cssY = -p.y;
   const cssZ = -p.z;
   p.$.style.transform = `translate3d(${cssX}px, ${cssY}px, ${cssZ}px)`;
+}
+
+function moveCamera(z) {
+  const x = 85;
+  const y = 450;
+  z = Math.max(z - kCameraOffset, -400);
+  $scene.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
 }
 
 function applySrc(obj, src) {
@@ -244,6 +251,13 @@ function startRenderingLoop() {
   Object.keys(game.$.players).forEach((key) => {
     renderPlayer(game.$.players[key]);
   });
+
+  // Find the player with the lowest Z
+  const lowestZ = Object.keys(game.$.players).reduce((acc, key) => {
+    return Math.min(acc, game.$.players[key].z);
+  }, Infinity);
+
+  moveCamera(lowestZ);
 }
 
 function flyEquation(t) {

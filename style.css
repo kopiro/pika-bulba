@@ -55,6 +55,7 @@ body {
   margin: 0 auto;
   perspective-origin: 100% -20%;
   perspective: 1000px;
+  overflow: hidden;
 }
 
 #scene {
