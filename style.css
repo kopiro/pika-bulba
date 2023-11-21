@@ -7,6 +7,7 @@ html {
   --screen-size: 300px;
   --track-width: 300px;
   --infinite-track-length: 5000px;
+  --infinite-track-offset: 400px;
   --img-size: 40px;
   --primary-color: #23643c;
 }
@@ -53,7 +54,7 @@ body {
   height: var(--screen-size);
   position: relative;
   margin: 0 auto;
-  perspective-origin: 90% -10%;
+  perspective-origin: 100% -10%;
   perspective: 1000px;
   overflow: hidden;
   border: 3px solid var(--primary-color);
@@ -100,13 +101,16 @@ body.debug #goal {
 
 #road {
   width: var(--track-width);
-  height: var(--infinite-track-length);
+  height: calc(var(--infinite-track-length) + var(--infinite-track-offset));
   background: #ddd url(./img/road.png) repeat-y;
   background-size: 100% auto;
   transform: translate3d(
       -50%,
       -50%,
-      calc(-1 * var(--infinite-track-length) / 2)
+      calc(
+        -1 * ((var(--infinite-track-length) / 2) -
+              (var(--infinite-track-offset) / 2))
+      )
     )
     rotateX(90.000000000001deg);
 }
@@ -118,8 +122,7 @@ body.debug #goal {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
-
-  transform: translate3d(-50%, -50%, -90px) rotateX(90.000000000001deg);
+  transform: translate3d(-50%, -50%, -45px) rotateX(90.000000000001deg);
 }
 
 .img {
@@ -187,7 +190,7 @@ button:hover {
 }
 
 #options {
-  display: none;
+  display: flex;
   gap: 24px;
   flex-direction: column;
 }
@@ -195,10 +198,6 @@ button:hover {
 #reset {
   display: none;
   flex-direction: column;
-}
-
-body.game-ready #options {
-  display: flex;
 }
 
 body.game-started #options {

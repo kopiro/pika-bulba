@@ -38,7 +38,7 @@ const kRockDensity = 20;
 const kBushOffset = 16;
 const kBushDensity = 30;
 
-const kCameraOffset = 800;
+const kCameraOffset = 600;
 const kMaxCameraZ = -480;
 const kCameraX = kTrackWidth / 4;
 const kCameraY = 400;
@@ -82,8 +82,7 @@ function prepareSceneAddBushes() {
     for (let i = 0; i < kBushDensity; i++) {
       const x = _x / 2;
       const y = 0;
-      const z =
-        kGoalZOffset + Math.random() * (kInfiniteTrackLength - kGoalZOffset);
+      const z = 0 + Math.random() * (kInfiniteTrackLength - 0);
       const bush = {
         x,
         y,
