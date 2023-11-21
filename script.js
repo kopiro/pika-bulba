@@ -23,7 +23,7 @@ const kInfiniteTrackLength = getCSSVar("--infinite-track-length");
 const kFPS = 1000 / 60;
 const kAutoMinAdvance = 1;
 const kAutoMaxAdvance = 10;
-const kXNoiseMax = 1;
+const kXNoiseMax = 2;
 
 const kCoopMul = 1;
 const kCoopBoost = kCoopMul * kAutoMaxAdvance;
