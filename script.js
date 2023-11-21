@@ -360,7 +360,6 @@ function movePlayer(p) {
       z: kBushSize,
     });
     if (collision) {
-      console.log("collision :>> ", collision);
       // Do nothing, do not advance
     } else {
       p.z -= p.coopValue;
