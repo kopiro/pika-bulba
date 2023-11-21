@@ -39,6 +39,9 @@ const kBushOffset = 16;
 const kBushDensity = 30;
 
 const kCameraOffset = 800;
+const kMaxCameraZ = -480;
+const kCameraX = kTrackWidth / 4;
+const kCameraY = 400;
 
 function loadGame() {
   readOptions();
@@ -192,10 +195,8 @@ function applyCoordinates(p) {
 }
 
 function moveCamera(z) {
-  const x = 85;
-  const y = 450;
-  z = Math.max(z - kCameraOffset, -400);
-  $scene.style.transform = `translate3d(${x}px, ${y}px, ${z}px)`;
+  const realZ = Math.max(z - kCameraOffset, kMaxCameraZ);
+  $scene.style.transform = `translate3d(${kCameraX}px, ${kCameraY}px, ${realZ}px)`;
 }
 
 function applySrc(obj, src) {
@@ -255,7 +256,7 @@ function startRenderingLoop() {
   // Find the player with the lowest Z
   const lowestZ = Object.keys(game.$.players).reduce((acc, key) => {
     return Math.min(acc, game.$.players[key].z);
-  }, Infinity);
+  }, kInfiniteTrackLength);
 
   moveCamera(lowestZ);
 }

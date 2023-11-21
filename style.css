@@ -53,14 +53,14 @@ body {
   height: var(--screen-size);
   position: relative;
   margin: 0 auto;
-  perspective-origin: 100% -20%;
+  perspective-origin: 90% -10%;
   perspective: 1000px;
   overflow: hidden;
+  border: 3px solid var(--primary-color);
 }
 
 #scene {
   position: absolute;
-  transform: translate3d(85px, 450px, -400px);
   transform-style: preserve-3d;
 }
 
