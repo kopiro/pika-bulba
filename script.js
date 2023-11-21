@@ -10,7 +10,7 @@ const $scene = $("#scene");
 const $trackers = $("#trackers");
 const $resetButton = $("#reset-button");
 const $start = $("#start");
-const $music = $("#music");
+const $overlay = $("#overlay");
 
 const game = {
   $: { rocks: [], bushes: [], players: {}, progress: {} },
@@ -65,6 +65,11 @@ function loadGame() {
       z: game.trackLength,
       frame: 0,
       coopValue: 0,
+      lastZ: game.trackLength,
+      playerPushX: null,
+      nextX: null,
+      jumpingT: null,
+      wonT: null,
     };
     return acc;
   }, game.$.players || {});
@@ -196,6 +201,21 @@ function checkForPlayerCollision() {
           t: now,
           x: p2.x + -1 * direction * kPlayerCollisionPushX,
         };
+
+        // Show a quick red overlay
+        $overlay.animate(
+          [
+            { background: "transparent" },
+            { background: "rgba(255, 0, 0, 0.5)" },
+            { background: "transparent" },
+          ],
+          {
+            duration: 200,
+            easing: "ease-in-out",
+            fill: "forwards",
+          }
+        );
+
         return;
       }
     }
