@@ -1,15 +1,16 @@
+const playerKeys = Object.keys(config.players);
+const $ = document.querySelector.bind(document);
+
 const $css = getComputedStyle(document.documentElement);
 
-const $winner = document.querySelector("#winner");
-const $startAutorace = document.querySelector("#start-autorace");
-const $startCoop = document.querySelector("#start-coop");
-const $scene = document.querySelector("#scene");
-const $trackers = document.querySelector("#trackers");
-const $resetButton = document.querySelector("#reset-button");
-const $start = document.querySelector("#start");
-const $music = document.querySelector("#music");
-
-const playerKeys = Object.keys(config.players);
+const $winner = $("#winner");
+const $startAutorace = $("#start-autorace");
+const $startCoop = $("#start-coop");
+const $scene = $("#scene");
+const $trackers = $("#trackers");
+const $resetButton = $("#reset-button");
+const $start = $("#start");
+const $music = $("#music");
 
 const game = {
   $: { rocks: [], bushes: [], players: {}, progress: {} },
@@ -269,14 +270,14 @@ function flyEquation(t) {
 
 function jumpEquation(t) {
   return {
-    z: kImgSize / 30,
-    y: 30 * Math.sin(6 * t),
+    z: 2,
+    y: 50 * Math.sin(6 * t),
   };
 }
 
 function movePlayer(p) {
   if (game.winner === p) {
-    const timeSinceNow = now - p.wonAtTime;
+    const timeSinceNow = now - p.wonT;
     const { x, y } = flyEquation(timeSinceNow / 1000);
     p.x += x;
     p.y = y;
@@ -288,25 +289,25 @@ function movePlayer(p) {
   }
 
   // Check if player is jumping
-  if (p.jumpingStartFrame) {
-    const frameSinceJumps = frameCount - p.jumpingStartFrame;
-    const { z, y } = jumpEquation(frameSinceJumps / kFPS);
+  if (p.jumpingT) {
+    const timeSinceJump = now - p.jumpingT;
+    const { z, y } = jumpEquation(timeSinceJump / 1000);
     p.y = y;
     p.z -= z;
 
     if (p.y < 0) {
       p.y = 0;
-      p.jumpingStartFrame = null;
+      p.jumpingT = null;
     }
   }
 
   // Move player
   if (game.mode === "auto") {
     // Check for imminent collision
-    if (!p.jumpingStartFrame) {
+    if (!p.jumpingT) {
       const collision = checkForRockCollision(p, kImgSize);
       if (collision) {
-        p.jumpingStartFrame = frameCount;
+        p.jumpingT = now;
       }
     }
 
@@ -315,7 +316,7 @@ function movePlayer(p) {
     p.x += xNoise;
 
     // Advance Z
-    if (!p.jumpingStartFrame) {
+    if (!p.jumpingT) {
       const advanceBy = getAdvanceBy(p.key);
       p.z = Math.max(0, p.z - advanceBy);
     }
@@ -326,7 +327,7 @@ function movePlayer(p) {
     if (collision) {
       // Do nothing, do not advance
     } else {
-      if (!p.jumpingStartFrame) {
+      if (!p.jumpingT) {
         p.z -= p.coopValue;
       }
     }
@@ -352,7 +353,7 @@ function declareWinner(p) {
   if (game.winner) return;
 
   game.winner = p;
-  p.wonAtTime = now;
+  p.wonT = now;
 
   game.$.progress[p.key].firstChild.textContent = "finished";
   $winner.textContent = `${p.key} won!`;
@@ -426,7 +427,7 @@ function handleAccelerometer() {
 }
 
 function readOptions() {
-  game.trackLength = document.querySelector("#opt-track-length").value;
+  game.trackLength = $("#opt-track-length").value;
 }
 
 function startGame() {
@@ -434,18 +435,18 @@ function startGame() {
   document.body.classList.add("game-started");
   game.started = true;
 
-  document.querySelector("#music-bg").currentTime = 0;
-  document.querySelector("#music-bg").play();
+  $("#music-bg").currentTime = 0;
+  $("#music-bg").play();
 }
 
 function endGame() {
   if (!game.started) return;
   document.body.classList.add("game-ended");
 
-  document.querySelector("#music-bg").pause();
+  $("#music-bg").pause();
 
-  document.querySelector("#music-end").currentTime = 0;
-  document.querySelector("#music-end").play();
+  $("#music-end").currentTime = 0;
+  $("#music-end").play();
 }
 
 function preloadResources() {
@@ -474,12 +475,12 @@ async function main() {
   });
 
   $resetButton.addEventListener("click", () => {
-    document.querySelector("#music-end").pause();
-    document.querySelector("#music-bg").pause();
+    $("#music-end").pause();
+    $("#music-bg").pause();
     loadGame();
   });
 
-  document.querySelector("#opt-track-length").addEventListener("input", () => {
+  $("#opt-track-length").addEventListener("input", () => {
     loadGame();
   });
 
@@ -495,7 +496,7 @@ async function main() {
             p.coopValue = Math.min(kMaxCoopBost, p.coopValue + kCoopBoost);
             break;
           case "jump":
-            p.jumpingStartFrame = p.jumpingStartFrame || frameCount;
+            p.jumpingT = p.jumpingT || now;
             break;
           case "left":
             p.x -= kCoopX;
