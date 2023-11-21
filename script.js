@@ -27,13 +27,16 @@ const kFPS = 60;
 const framesPerSecond = 1000 / kFPS;
 const kAutoMinAdvance = 1;
 const kAutoMaxAdvance = 10;
-const kXNoiseMax = 2;
+const kXNoiseMax = 50;
 
 const kCoopMul = 1;
 const kCoopBoost = kCoopMul * kAutoMaxAdvance;
 const kCoopDecay = kCoopMul * 0.05;
 const kMaxCoopBost = 3;
 const kCoopX = 2;
+
+const kPlayerCollisionPushX = 35;
+const kReachedPx = 0.5;
 
 const kGoalZOffset = 100;
 const kRockDensity = 20;
@@ -168,6 +171,37 @@ function checkForRockCollision(p, tresholds) {
   return collided;
 }
 
+function checkForPlayerCollision() {
+  // Detect collision between game.$.players
+  const kImgSizeBody = kImgSize / 2.5;
+  const players = Object.values(game.$.players);
+  for (const p of players) {
+    for (const p2 of players) {
+      if (p === p2) continue;
+      if (
+        p.x + kImgSizeBody >= p2.x - kImgSizeBody &&
+        p.x - kImgSizeBody <= p2.x + kImgSizeBody &&
+        p.y + kImgSizeBody >= p2.y - kImgSizeBody &&
+        p.y - kImgSizeBody <= p2.y + kImgSizeBody &&
+        p.z + kImgSizeBody >= p2.z - kImgSizeBody &&
+        p.z - kImgSizeBody <= p2.z + kImgSizeBody
+      ) {
+        // Push the players away from each other in the X axis
+        const direction = p.x < p2.x ? -1 : 1;
+        p.playerPushX = {
+          t: now,
+          x: p.x + direction * kPlayerCollisionPushX,
+        };
+        p2.playerPushX = {
+          t: now,
+          x: p2.x + -1 * direction * kPlayerCollisionPushX,
+        };
+        return;
+      }
+    }
+  }
+}
+
 async function prepareScene() {
   prepareSceneAddBushes();
   prepareSceneAddRocks();
@@ -196,12 +230,12 @@ async function prepareScene() {
 }
 
 function clampPlayer(p) {
-  if (game.winner !== p) {
-    p.x = Math.min(
-      kTrackWidth / 2 - kImgSize,
-      Math.max(-(kTrackWidth / 2) + kImgSize, p.x)
-    );
-  }
+  // if (game.winner !== p) {
+  //   p.x = Math.min(
+  //     kTrackWidth / 2 - kImgSize,
+  //     Math.max(-(kTrackWidth / 2) + kImgSize, p.x)
+  //   );
+  // }
   p.y = Math.max(0, p.y);
   p.z = Math.max(0, p.z);
 }
@@ -237,6 +271,12 @@ function renderPlayer(p) {
     applySrc(p, `./${p.key}/lost.gif`);
   } else {
     applySrc(p, `./${p.key}/${p.frame + 1}.png`);
+
+    if (p.playerPushX) {
+      // Squeeze the player
+      p.$.style.transform = `${p.$.style.transform} scaleX(0.85)`;
+    }
+
     game.$.progress[p.key].firstChild.textContent = `${Math.floor(
       ratio * game.trackLength
     )}m`;
@@ -296,8 +336,8 @@ function jumpEquation(t) {
 
 function movePlayer(p) {
   if (game.winner === p) {
-    const timeSinceNow = now - p.wonT;
-    const { x, y } = flyEquation(timeSinceNow / 1000);
+    const delta = now - p.wonT;
+    const { x, y } = flyEquation(delta / 1000);
     p.x += x;
     p.y = y;
     return;
@@ -307,10 +347,33 @@ function movePlayer(p) {
     return;
   }
 
+  checkForPlayerCollision();
+
+  if (p.playerPushX) {
+    // Exponential movement towards playerPushX based on time
+    const diff = p.playerPushX.x - p.x;
+    const step = diff / 10;
+    const delta = now - p.playerPushX.t;
+    p.x = p.x + step * Math.pow(2, delta / 1000);
+    if (Math.abs(diff) <= kReachedPx) {
+      p.playerPushX = null;
+      p.nextX = null;
+    }
+  } else if (p.nextX) {
+    // Linear movement towards nextX based on time
+    const diff = p.nextX.x - p.x;
+    const step = diff / 10;
+    const delta = now - p.nextX.t;
+    p.x = p.x + (step * delta) / 1000;
+    if (Math.abs(diff) <= kReachedPx) {
+      p.nextX = null;
+    }
+  }
+
   // Check if player is jumping
   if (p.jumpingT) {
-    const timeSinceJump = now - p.jumpingT;
-    const { z, y } = jumpEquation(timeSinceJump / 1000);
+    const delta = now - p.jumpingT;
+    const { z, y } = jumpEquation(delta / 1000);
     p.y = y;
     p.z -= z;
 
@@ -336,8 +399,17 @@ function movePlayer(p) {
     }
 
     // Add noise
-    const xNoise = -kXNoiseMax + Math.random() * kXNoiseMax * 2;
-    p.x += xNoise;
+    if (!p.nextX) {
+      const xNoise = -kXNoiseMax + Math.random() * kXNoiseMax * 2;
+      const nextX = p.x + xNoise;
+      p.nextX = {
+        t: now,
+        x: Math.min(
+          kTrackWidth / 2 - kImgSize,
+          Math.max(-kTrackWidth / 2 + kImgSize, nextX)
+        ),
+      };
+    }
 
     // Advance Z
     const advanceBy = getAdvanceBy(p.key);
