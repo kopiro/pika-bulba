@@ -518,8 +518,8 @@ async function main() {
   });
 
   window.addEventListener("keyup", (e) => {
-    if (game.mode !== "coop") return;
     e.preventDefault();
+    if (game.mode !== "coop") return;
 
     Object.keys(game.$.players).forEach((key) => {
       const p = game.$.players[key];
@@ -538,9 +538,9 @@ async function main() {
           case "right":
             p.x += kCoopX;
             break;
-          case "back":
-            p.z += 10;
-            break;
+          // case "back":
+          //   p.z += 10;
+          //   break;
         }
       });
     });
