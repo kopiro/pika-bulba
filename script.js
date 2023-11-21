@@ -27,15 +27,16 @@ const kFPS = 60;
 const framesPerSecond = 1000 / kFPS;
 const kAutoMinAdvance = 1;
 const kAutoMaxAdvance = 10;
-const kXNoiseMax = 50;
+const kXNoiseMax = 100;
+const kGravity = (30 * 9.81) / kFPS;
 
 const kCoopMul = 1;
 const kCoopBoost = kCoopMul * kAutoMaxAdvance;
 const kCoopDecay = kCoopMul * 0.05;
 const kMaxCoopBost = 3;
-const kCoopX = 2;
+const kCoopX = 3;
 
-const kPlayerCollisionPushX = 35;
+const kPlayerCollisionPushX = 60;
 const kReachedPx = 0.5;
 
 const kGoalZOffset = 100;
@@ -70,6 +71,7 @@ function loadGame() {
       nextX: null,
       jumpingT: null,
       wonT: null,
+      fell: false,
     };
     return acc;
   }, game.$.players || {});
@@ -256,8 +258,8 @@ function clampPlayer(p) {
   //     Math.max(-(kTrackWidth / 2) + kImgSize, p.x)
   //   );
   // }
-  p.y = Math.max(0, p.y);
-  p.z = Math.max(0, p.z);
+  // p.y = Math.max(0, p.y);
+  // p.z = Math.max(0, p.z);
 }
 
 function applyCoordinates(p) {
@@ -302,9 +304,13 @@ function renderPlayer(p) {
     )}m`;
   }
 
-  game.$.progress[p.key].firstChild.style.transform = `translateX(-${
-    (1 - ratio) * 100
-  }%)`;
+  if (p.fell) {
+    game.$.progress[p.key].firstChild.textContent = "out";
+  } else {
+    game.$.progress[p.key].firstChild.style.transform = `translateX(-${
+      (1 - ratio) * 100
+    }%)`;
+  }
 }
 
 let then = null;
@@ -354,6 +360,13 @@ function jumpEquation(t) {
   };
 }
 
+function checkForPlayerOutOfTrack(p) {
+  if (p.fell) return;
+  if (p.x < -kTrackWidth / 2 || p.x > kTrackWidth / 2) {
+    p.fell = true;
+  }
+}
+
 function movePlayer(p) {
   if (game.winner === p) {
     const delta = now - p.wonT;
@@ -368,6 +381,12 @@ function movePlayer(p) {
   }
 
   checkForPlayerCollision();
+  checkForPlayerOutOfTrack(p);
+
+  if (p.fell) {
+    p.y = p.y - kGravity;
+    return;
+  }
 
   if (p.playerPushX) {
     // Exponential movement towards playerPushX based on time
