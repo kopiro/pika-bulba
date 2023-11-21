@@ -419,13 +419,18 @@ function startGame() {
   if (game.started) return;
   document.body.classList.add("game-started");
   game.started = true;
+
+  document.querySelector("#music-bg").currentTime = 0;
   document.querySelector("#music-bg").play();
 }
 
 function endGame() {
   if (!game.started) return;
   document.body.classList.add("game-ended");
+
   document.querySelector("#music-bg").pause();
+
+  document.querySelector("#music-end").currentTime = 0;
   document.querySelector("#music-end").play();
 }
 
@@ -455,6 +460,8 @@ async function main() {
   });
 
   $resetButton.addEventListener("click", () => {
+    document.querySelector("#music-end").pause();
+    document.querySelector("#music-bg").pause();
     loadGame();
   });
 
