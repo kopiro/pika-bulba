@@ -20,7 +20,8 @@ const kImgSize = getCSSVar("--img-size");
 const kInfiniteTrackLength = getCSSVar("--infinite-track-length");
 
 // Static values
-const kFPS = 1000 / 60;
+const kFPS = 60;
+const framesPerSecond = 1000 / kFPS;
 const kAutoMinAdvance = 1;
 const kAutoMaxAdvance = 10;
 const kXNoiseMax = 2;
@@ -229,8 +230,8 @@ function startRenderingLoop() {
   now = Date.now();
   deltaTime = now - then;
 
-  if (deltaTime <= kFPS) return;
-  then = now - (deltaTime % kFPS);
+  if (deltaTime <= framesPerSecond) return;
+  then = now - (deltaTime % framesPerSecond);
   frameCount++;
 
   if (game.started) {
@@ -275,7 +276,7 @@ function movePlayer(p) {
   if (p.jumpingStartFrame) {
     const frameSinceJumps = frameCount - p.jumpingStartFrame;
     console.log("framecount, p :>> ", frameCount, p);
-    const { z, y } = jumpEquation(frameSinceJumps / (4 * kFPS));
+    const { z, y } = jumpEquation(frameSinceJumps / kFPS);
     p.y = y;
     p.z -= z;
 
@@ -311,7 +312,9 @@ function movePlayer(p) {
     if (collision) {
       // Do nothing, do not advance
     } else {
-      p.z -= p.coopValue;
+      if (!p.jumpingStartFrame) {
+        p.z -= p.coopValue;
+      }
     }
   }
 
