@@ -17,6 +17,7 @@ body {
 
 * {
   font-family: Font, monospace;
+  font-weight: normal;
   color: var(--primary-color);
   box-sizing: border-box;
 }

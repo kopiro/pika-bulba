@@ -24,7 +24,13 @@ const kFPS = 1000 / 60;
 const kAutoMinAdvance = 1;
 const kAutoMaxAdvance = 10;
 const kXNoiseMax = 1;
-const kCoopAdvance = 10;
+
+const kCoopMul = 1;
+const kCoopBoost = kCoopMul * kAutoMaxAdvance;
+const kCoopDecay = kCoopMul * 0.05;
+const kMaxCoopBost = 3;
+const kCoopX = 2;
+
 const kGoalZOffset = 100;
 const kRockDensity = 20;
 const kBushOffset = 16;
@@ -47,6 +53,7 @@ function loadGame() {
       y: 0,
       z: game.trackLength,
       frame: 0,
+      coopValue: 0,
     };
     return acc;
   }, game.$.players || {});
@@ -89,25 +96,27 @@ function prepareSceneAddBushes() {
 
 function prepareSceneAddRocks() {
   // Put the bushes in the scene
-  const maxX = kTrackWidth / 2 - kBushOffset * 2;
+  const maxX = kBushOffset + kTrackWidth / 2 - kBushOffset * 2;
   for (let i = 0; i < kRockDensity; i++) {
     const x = maxX - Math.random() * maxX * 2;
     const y = 0;
     const z =
       kGoalZOffset + Math.random() * (kInfiniteTrackLength - kGoalZOffset);
-    const rock = {
-      x,
-      y,
-      z,
-      $: (() => {
-        const $ = document.createElement("div");
-        $.className = "bush rock-style";
-        return $;
-      })(),
-    };
-    game.$.rocks.push(rock);
-    applyCoordinates(rock);
-    $scene.appendChild(rock.$);
+    [-1, 1].forEach((dir) => {
+      const rock = {
+        x: dir * x,
+        y,
+        z,
+        $: (() => {
+          const $ = document.createElement("div");
+          $.className = "bush rock-style";
+          return $;
+        })(),
+      };
+      game.$.rocks.push(rock);
+      applyCoordinates(rock);
+      $scene.appendChild(rock.$);
+    });
   }
 }
 
@@ -118,7 +127,7 @@ function checkForRockCollision({ x, y, z }, treshold) {
     game.$.rocks.reduce((acc, rock) => {
       const quantizedX = Math.floor(rock.x / treshold);
       const quantizedY = Math.floor(rock.y / treshold);
-      const quantizedZ = Math.floor(rock.z / (treshold * 2));
+      const quantizedZ = Math.floor(rock.z / treshold);
       const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
       acc[key] = rock;
       return acc;
@@ -127,7 +136,7 @@ function checkForRockCollision({ x, y, z }, treshold) {
   // Check for lookup
   const quantizedX = Math.floor(x / treshold);
   const quantizedY = Math.floor(y / treshold);
-  const quantizedZ = Math.floor(z / (treshold * 2));
+  const quantizedZ = Math.floor(z / treshold);
   const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
 
   return key in __rockCollisionCache[treshold];
@@ -163,10 +172,12 @@ async function prepareScene() {
 }
 
 function clampPlayer(p) {
-  p.x = Math.min(
-    kTrackWidth / 2 - kImgSize,
-    Math.max(-(kTrackWidth / 2) + kImgSize, p.x)
-  );
+  if (game.winner !== p) {
+    p.x = Math.min(
+      kTrackWidth / 2 - kImgSize,
+      Math.max(-(kTrackWidth / 2) + kImgSize, p.x)
+    );
+  }
   p.y = Math.max(0, p.y);
   p.z = Math.max(0, p.z);
 }
@@ -185,7 +196,7 @@ function applySrc(obj, src) {
   }
 }
 
-function renderPlayer(p, now) {
+function renderPlayer(p) {
   clampPlayer(p);
   applyCoordinates(p);
 
@@ -208,40 +219,51 @@ function renderPlayer(p, now) {
 }
 
 let then = null;
+let now = null;
+let deltaTime = null;
+let frameCount = 1;
 
 function startRenderingLoop() {
   requestAnimationFrame(startRenderingLoop);
 
-  let now = Date.now();
-  let deltaTime = now - then;
+  now = Date.now();
+  deltaTime = now - then;
 
   if (deltaTime <= kFPS) return;
   then = now - (deltaTime % kFPS);
+  frameCount++;
 
   if (game.started) {
     Object.keys(game.$.players).forEach((key) => {
-      movePlayer(game.$.players[key], now);
+      movePlayer(game.$.players[key]);
     });
   }
 
   Object.keys(game.$.players).forEach((key) => {
-    renderPlayer(game.$.players[key], now);
+    renderPlayer(game.$.players[key]);
   });
 }
 
-function flyUpEquation(t) {
-  return 130 * t + 5 * Math.sin(20 * t);
+function flyEquation(t) {
+  return {
+    x: -1 * t,
+    y: 130 * t + 5 * Math.sin(20 * t),
+  };
 }
 
 function jumpEquation(t) {
-  return 30 * Math.sin(10 * t);
+  return {
+    z: kImgSize / 30,
+    y: 30 * Math.sin(6 * t),
+  };
 }
 
-function movePlayer(p, now) {
+function movePlayer(p) {
   if (game.winner === p) {
-    const timeSinceWin = (now - p.wonAt) / 1000;
-    p.x += 0.5;
-    p.y = flyUpEquation(timeSinceWin);
+    const timeSinceNow = now - p.wonAtTime;
+    const { x, y } = flyEquation(timeSinceNow / 1000);
+    p.x += x;
+    p.y = y;
     return;
   }
 
@@ -249,14 +271,27 @@ function movePlayer(p, now) {
     return;
   }
 
+  // Check if player is jumping
+  if (p.jumpingStartFrame) {
+    const frameSinceJumps = frameCount - p.jumpingStartFrame;
+    console.log("framecount, p :>> ", frameCount, p);
+    const { z, y } = jumpEquation(frameSinceJumps / (4 * kFPS));
+    p.y = y;
+    p.z -= z;
+
+    if (p.y < 0) {
+      p.y = 0;
+      p.jumpingStartFrame = null;
+    }
+  }
+
   // Move player
   if (game.mode === "auto") {
     // Check for imminent collision
-    if (!p.jumpingStartTime) {
+    if (!p.jumpingStartFrame) {
       const collision = checkForRockCollision(p, kImgSize);
       if (collision) {
-        console.log("collision :>> ", collision);
-        p.jumpingStartTime = now;
+        p.jumpingStartFrame = frameCount;
       }
     }
 
@@ -264,20 +299,20 @@ function movePlayer(p, now) {
     const xNoise = -kXNoiseMax + Math.random() * kXNoiseMax * 2;
     p.x += xNoise;
 
-    // Check if player is jumping
-    if (p.jumpingStartTime) {
-      const timeSinceJump = (now - p.jumpingStartTime) / 1000;
-      p.y = jumpEquation(timeSinceJump);
-
-      if (p.y < 0) {
-        p.y = 0;
-        p.jumpingStartTime = null;
-      }
-    }
-
     // Advance Z
-    const advanceBy = getAdvanceBy(p.key);
-    p.z = Math.max(0, p.z - advanceBy);
+    if (!p.jumpingStartFrame) {
+      const advanceBy = getAdvanceBy(p.key);
+      p.z = Math.max(0, p.z - advanceBy);
+    }
+  } else if (game.mode === "coop") {
+    p.coopValue = Math.max(0, p.coopValue - kCoopDecay);
+
+    const collision = checkForRockCollision(p, kImgSize);
+    if (collision) {
+      // Do nothing, do not advance
+    } else {
+      p.z -= p.coopValue;
+    }
   }
 
   // Advance next frame of the GIF
@@ -300,7 +335,7 @@ function declareWinner(p) {
   if (game.winner) return;
 
   game.winner = p;
-  p.wonAt = Date.now();
+  p.wonAtTime = now;
 
   game.$.progress[p.key].firstChild.textContent = "finished";
   $winner.textContent = `${p.key} won!`;
@@ -321,7 +356,6 @@ function getCSSVar(key) {
 }
 
 function preloadImages(key) {
-  console.log("game.$.players :>> ", game.$.players);
   return new Promise((resolve) => {
     let loaded = 0;
     const frames = new Array(game.$.players[key].config.maxFrames - 1)
@@ -427,14 +461,27 @@ async function main() {
 
     Object.keys(game.$.players).forEach((key) => {
       const p = game.$.players[key];
-      if (p.config.keystrokes.includes(e.key)) {
-        p.z -= kCoopAdvance;
-      }
+      Object.entries(p.config.keystrokes).forEach(([keystroke, action]) => {
+        if (keystroke !== e.key) return;
+        switch (action) {
+          case "advance":
+            p.coopValue = Math.min(kMaxCoopBost, p.coopValue + kCoopBoost);
+            break;
+          case "jump":
+            p.jumpingStartFrame = p.jumpingStartFrame || frameCount;
+            break;
+          case "left":
+            p.x -= kCoopX;
+            break;
+          case "right":
+            p.x += kCoopX;
+            break;
+        }
+      });
     });
   });
 
   startRenderingLoop();
 }
 
-console.log("config :>> ", config);
 main();
