@@ -7,6 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, user-scalable=no"
     />
+    <meta charset="utf-8" />
     <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body>
@@ -21,11 +22,11 @@
       <div id="trackers"></div>
       <div id="options">
         <div class="buttons">
-          <button id="start-autorace">Start auto</button>
-          <button id="start-coop">Start coop</button>
+          <button id="start-autorace">Let them run</button>
+          <button id="start-coop">Make me run</button>
         </div>
         <div class="option">
-          <label for="opt-track-length">track length</label>
+          <label for="opt-track-length">Track length</label>
           <input
             type="range"
             min="400"
@@ -39,6 +40,11 @@
       <div id="winner"></div>
       <div id="reset">
         <button id="reset-button">Rematch</button>
+      </div>
+      <div id="tutorial">
+        Use <b>A,S,D</b> to move Pikachu,<br />
+        Use <b>←,→,↓</b> to move Bulbasaur,<br />and <b>Spacebar</b> to jump...
+        for both of them
       </div>
       <div id="copy">
         Made by

@@ -59,6 +59,10 @@ body {
   border: 3px solid var(--primary-color);
 }
 
+#tutorial {
+  color: #999;
+}
+
 #scene {
   position: absolute;
   transform-style: preserve-3d;
