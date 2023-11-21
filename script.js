@@ -133,7 +133,7 @@ function checkForRockCollision({ x, y, z }, treshold) {
     __rockCollisionCache[treshold] ||
     game.$.rocks.reduce((acc, rock) => {
       const quantizedX = Math.floor(rock.x / treshold);
-      const quantizedY = Math.floor(rock.y / treshold);
+      const quantizedY = Math.floor(rock.y);
       const quantizedZ = Math.floor(rock.z / treshold);
       const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
       acc[key] = rock;
@@ -142,7 +142,7 @@ function checkForRockCollision({ x, y, z }, treshold) {
 
   // Check for lookup
   const quantizedX = Math.floor(x / treshold);
-  const quantizedY = Math.floor(y / treshold);
+  const quantizedY = Math.floor(y);
   const quantizedZ = Math.floor(z / treshold);
   const key = `${quantizedX}-${quantizedY}-${quantizedZ}`;
 
@@ -270,7 +270,7 @@ function flyEquation(t) {
 
 function jumpEquation(t) {
   return {
-    z: 2,
+    z: 0,
     y: 50 * Math.sin(6 * t),
   };
 }
@@ -316,10 +316,8 @@ function movePlayer(p) {
     p.x += xNoise;
 
     // Advance Z
-    if (!p.jumpingT) {
-      const advanceBy = getAdvanceBy(p.key);
-      p.z = Math.max(0, p.z - advanceBy);
-    }
+    const advanceBy = getAdvanceBy(p.key);
+    p.z = Math.max(0, p.z - advanceBy);
   } else if (game.mode === "coop") {
     p.coopValue = Math.max(0, p.coopValue - kCoopDecay);
 
@@ -327,9 +325,7 @@ function movePlayer(p) {
     if (collision) {
       // Do nothing, do not advance
     } else {
-      if (!p.jumpingT) {
-        p.z -= p.coopValue;
-      }
+      p.z -= p.coopValue;
     }
   }
 
@@ -486,6 +482,7 @@ async function main() {
 
   window.addEventListener("keyup", (e) => {
     if (game.mode !== "coop") return;
+    e.preventDefault();
 
     Object.keys(game.$.players).forEach((key) => {
       const p = game.$.players[key];
