@@ -7,6 +7,7 @@ const $scene = document.querySelector("#scene");
 const $trackers = document.querySelector("#trackers");
 const $resetButton = document.querySelector("#reset-button");
 const $start = document.querySelector("#start");
+const $music = document.querySelector("#music");
 
 const playerKeys = Object.keys(config.players);
 
@@ -275,7 +276,6 @@ function movePlayer(p) {
   // Check if player is jumping
   if (p.jumpingStartFrame) {
     const frameSinceJumps = frameCount - p.jumpingStartFrame;
-    console.log("framecount, p :>> ", frameCount, p);
     const { z, y } = jumpEquation(frameSinceJumps / kFPS);
     p.y = y;
     p.z -= z;
@@ -419,11 +419,14 @@ function startGame() {
   if (game.started) return;
   document.body.classList.add("game-started");
   game.started = true;
+  document.querySelector("#music-bg").play();
 }
 
 function endGame() {
   if (!game.started) return;
   document.body.classList.add("game-ended");
+  document.querySelector("#music-bg").pause();
+  document.querySelector("#music-end").play();
 }
 
 function preloadResources() {
