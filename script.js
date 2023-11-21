@@ -165,15 +165,6 @@ function checkForRockCollision(p, tresholds) {
     keyLeft in __rockCollisionCache[strThresholds] ||
     keyRight in __rockCollisionCache[strThresholds] ||
     keyCenter in __rockCollisionCache[strThresholds];
-  if (collided) {
-    console.log(
-      "collided :>> ",
-      p,
-      __rockCollisionCache[strThresholds][keyLeft],
-      __rockCollisionCache[strThresholds][keyRight],
-      __rockCollisionCache[strThresholds][keyCenter]
-    );
-  }
   return collided;
 }
 
