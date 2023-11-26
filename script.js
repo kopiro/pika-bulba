@@ -30,10 +30,10 @@ const kFPS = 60;
 // Frames per second we want to render
 const framesPerSecond = 1000 / kFPS;
 // PX per frame we want to advance when game is running in auto mode, minimum and maximum
-const kAutoMinAdvance = 0.5;
-const kAutoMaxAdvance = 8;
+const kAutoMinAdvance = 0.2;
+const kAutoMaxAdvance = 5;
 // Overshoot for the player to move along the X axis when game is running in auto mode
-const kXNoiseMax = 100;
+const kXNoiseMax = 30;
 // PX per frame to apply to the player is falling
 const kGravity = (30 * 9.81) / kFPS;
 
