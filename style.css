@@ -6,7 +6,7 @@
 html {
   --screen-size: 300px;
   --track-width: 300px;
-  --infinite-track-length: 5000px;
+  --infinite-track-length: 10000px;
   --infinite-track-offset: 400px;
   --img-size: 40px;
   --bush-size: 20px;
